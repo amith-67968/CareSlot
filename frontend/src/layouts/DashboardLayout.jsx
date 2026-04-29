@@ -60,19 +60,7 @@ export default function DashboardLayout() {
           </button>
         </div>
 
-        {/* User card */}
-        <div className="dash-user-card" onClick={() => setProfileOpen(true)} role="button" tabIndex={0}>
-          <div className="dash-user-avatar">{initial}</div>
-          <div className="dash-user-info">
-            <span className="dash-user-name">{userName}</span>
-            <span className="dash-user-role">Patient</span>
-          </div>
-        </div>
 
-        {/* New Analysis button */}
-        <button className="dash-new-scan-btn" onClick={() => navigate('/dashboard/detection')}>
-          + New Analysis
-        </button>
 
         {/* Navigation */}
         <nav className="dash-nav">
@@ -93,17 +81,7 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        {/* Bottom actions */}
-        <div className="dash-sidebar-footer">
-          <button className="dash-footer-btn" onClick={() => setProfileOpen(true)}>
-            <UserCircle size={18} />
-            <span>Profile</span>
-          </button>
-          <button className="dash-footer-btn dash-logout-btn" onClick={handleLogout}>
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
-        </div>
+
       </aside>
 
       {/* Main */}
@@ -124,20 +102,6 @@ export default function DashboardLayout() {
           </div>
 
           <div className="dash-topbar-right">
-            <button
-              className="dash-settings-btn"
-              aria-label="Settings"
-            >
-              <Settings size={18} />
-            </button>
-            <div
-              className="dash-avatar"
-              onClick={() => setProfileOpen(true)}
-              role="button"
-              tabIndex={0}
-            >
-              {initial}
-            </div>
           </div>
         </header>
 
