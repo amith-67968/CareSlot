@@ -108,6 +108,7 @@ export const skinAPI = {
     return post('/api/skin/analyze', form);
   },
   getHistory: () => get('/api/skin/history'),
+  getPrediction: (id) => get(`/api/skin/predictions/${id}`),
 };
 
 /* ── PCOD ────────────────────────────────────────────────────────── */
