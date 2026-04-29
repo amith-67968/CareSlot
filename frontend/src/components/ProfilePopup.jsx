@@ -44,7 +44,19 @@ export default function ProfilePopup({ onClose, onLogout }) {
 
       try {
         const chatData = await chatAPI.getHistory();
-        setChatHistory(chatData.history || []);
+        const sessions = chatData.sessions || [];
+        // Flatten sessions into displayable items (show first user message per session)
+        const items = sessions.map((s) => {
+          const firstUserMsg = s.messages?.find((m) => m.role === 'user');
+          return {
+            id: s.session_id,
+            message: firstUserMsg?.message || 'Chat session',
+            role: 'user',
+            created_at: s.created_at || firstUserMsg?.created_at,
+            messageCount: s.messages?.length || 0,
+          };
+        });
+        setChatHistory(items);
       } catch { /* chat history optional */ }
     } catch (err) {
       console.error('Profile load error:', err);
@@ -196,11 +208,13 @@ export default function ProfilePopup({ onClose, onLogout }) {
                       {chatHistory.map((c, i) => (
                         <div key={c.id || i} className="pp-history-item">
                           <div className="pp-history-date">
-                            {new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {c.created_at
+                              ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                              : '—'}
                           </div>
                           <div className="pp-history-details">
-                            <strong>{c.message?.slice(0, 50) || 'Chat session'}...</strong>
-                            <span>{c.role === 'user' ? 'You' : 'AI Assistant'}</span>
+                            <strong>{c.message?.length > 50 ? c.message.slice(0, 50) + '...' : c.message || 'Chat session'}</strong>
+                            <span>{c.messageCount || 0} messages</span>
                           </div>
                         </div>
                       ))}

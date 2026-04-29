@@ -7,24 +7,43 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
+const AUTH_KEY = 'careslot_auth';
+const REMEMBER_KEY = 'careslot_remember';
+
+/**
+ * Resolve which storage backend to use.
+ * If "remember me" was checked, use localStorage (survives browser close).
+ * Otherwise use sessionStorage (cleared on close).
+ */
+function getStorage() {
+  return localStorage.getItem(REMEMBER_KEY) === 'true'
+    ? localStorage
+    : sessionStorage;
+}
+
+/** Read the persisted auth object, checking both storages. */
+function readAuth() {
+  const raw = localStorage.getItem(AUTH_KEY) || sessionStorage.getItem(AUTH_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(AUTH_KEY);
+    sessionStorage.removeItem(AUTH_KEY);
+    return null;
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('careslot_auth');
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
-        localStorage.removeItem('careslot_auth');
-      }
-    }
+    setUser(readAuth());
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, remember = false) => {
     const data = await authAPI.login(email, password);
     const userData = {
       access_token: data.access_token,
@@ -32,7 +51,17 @@ export function AuthProvider({ children }) {
       user_id: data.user_id,
       email: data.email,
     };
-    localStorage.setItem('careslot_auth', JSON.stringify(userData));
+
+    // Persist remember preference
+    if (remember) {
+      localStorage.setItem(REMEMBER_KEY, 'true');
+      localStorage.setItem(AUTH_KEY, JSON.stringify(userData));
+    } else {
+      localStorage.removeItem(REMEMBER_KEY);
+      localStorage.removeItem(AUTH_KEY);
+      sessionStorage.setItem(AUTH_KEY, JSON.stringify(userData));
+    }
+
     setUser(userData);
     return userData;
   };
@@ -51,7 +80,9 @@ export function AuthProvider({ children }) {
       user_id: data.user_id,
       email: data.email,
     };
-    localStorage.setItem('careslot_auth', JSON.stringify(userData));
+    // New signups always persist (user just created account)
+    localStorage.setItem(REMEMBER_KEY, 'true');
+    localStorage.setItem(AUTH_KEY, JSON.stringify(userData));
     setUser(userData);
     return userData;
   };
@@ -62,7 +93,9 @@ export function AuthProvider({ children }) {
     } catch {
       /* ignore */
     }
-    localStorage.removeItem('careslot_auth');
+    localStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(REMEMBER_KEY);
+    sessionStorage.removeItem(AUTH_KEY);
     setUser(null);
   };
 

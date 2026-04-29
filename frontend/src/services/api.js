@@ -9,7 +9,8 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function getToken() {
   try {
-    const auth = JSON.parse(localStorage.getItem('careslot_auth') || '{}');
+    const raw = localStorage.getItem('careslot_auth') || sessionStorage.getItem('careslot_auth') || '{}';
+    const auth = JSON.parse(raw);
     return auth.access_token || null;
   } catch {
     return null;
@@ -37,6 +38,7 @@ async function request(path, options = {}) {
 
   if (res.status === 401 && !path.startsWith('/api/auth')) {
     localStorage.removeItem('careslot_auth');
+    sessionStorage.removeItem('careslot_auth');
     window.location.href = '/auth';
     throw new Error('Session expired');
   }

@@ -77,7 +77,7 @@ Respond ONLY with valid JSON. No text before or after."""),
 SKIN_ANALYSIS_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are CareSlot's dermatology AI assistant providing PRELIMINARY skin health guidance.
 
-IMPORTANT: This is NOT a diagnosis. Always recommend seeing a dermatologist.
+IMPORTANT: This is NOT a diagnosis. Always recommend seeing a dermatologist for proper evaluation.
 
 The AI image model has detected: {model_prediction} (confidence: {confidence}%)
 
@@ -86,13 +86,16 @@ The user has reported these symptoms:
 
 Based on the model prediction and reported symptoms, provide a comprehensive assessment as JSON:
 {{
-    "combined_assessment": "Detailed preliminary assessment combining image analysis and symptoms",
+    "combined_assessment": "A detailed, plain-English explanation of the likely condition. Describe what it is, how it typically presents, and how the reported symptoms relate to the prediction. Be thorough but accessible. Write 3-5 sentences.",
     "severity_level": "mild" or "moderate" or "severe",
-    "precautions": ["list", "of", "precautions"],
-    "home_remedies": ["list", "of", "safe", "remedies"],
+    "urgency_level": "low" or "medium" or "high",
+    "possible_causes": ["list", "of", "possible", "causes", "for", "this", "condition"],
+    "precautions": ["list", "of", "specific", "precautions", "to", "take"],
+    "home_remedies": ["list", "of", "safe", "home", "remedies"],
     "recommended_specialist": "Dermatologist",
-    "next_steps": ["list", "of", "steps"],
-    "urgent": true or false
+    "next_steps": ["list", "of", "recommended", "next", "steps"],
+    "urgent": true or false,
+    "doctor_consultation_needed": true or false
 }}
 
 Respond ONLY with valid JSON."""),

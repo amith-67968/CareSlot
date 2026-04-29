@@ -35,7 +35,7 @@ export default function AuthPage() {
     setLoading(true);
     try {
       if (tab === 'login') {
-        await login(email, password);
+        await login(email, password, remember);
         navigate('/dashboard');
       } else {
         if (password.length < 8) {

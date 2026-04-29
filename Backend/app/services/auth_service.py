@@ -24,17 +24,26 @@ class AuthService:
             user = auth_response.user
 
             if user:
-                # Create user profile (upsert to handle re-signups)
+                # Build profile data from signup fields
+                profile_data = {
+                    "full_name": full_name,
+                    "email": email,
+                }
+                if extra_profile:
+                    profile_data.update(extra_profile)
+
                 existing = self.supabase.select_one("user_profiles", filters={"user_id": user.id})
                 if not existing:
-                    profile_data = {
-                        "user_id": user.id,
-                        "full_name": full_name,
-                        "email": email,
-                    }
-                    if extra_profile:
-                        profile_data.update(extra_profile)
+                    profile_data["user_id"] = user.id
                     self.supabase.insert("user_profiles", profile_data)
+                else:
+                    # Update existing profile with any new/missing fields
+                    update_fields = {
+                        k: v for k, v in profile_data.items()
+                        if v and (not existing.get(k))
+                    }
+                    if update_fields:
+                        self.supabase.update("user_profiles", update_fields, {"user_id": user.id})
 
             return {
                 "user_id": user.id if user else None,

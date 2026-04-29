@@ -7,7 +7,7 @@ from app.ai.skin_model import predict_skin_disease
 from app.ai.chains import run_skin_analysis
 from app.services.supabase_service import SupabaseService
 from app.models.skin import SkinSymptomsInput
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import uuid
 import logging
 
@@ -64,6 +64,7 @@ class SkinService:
 
         # 3. Build symptoms text for LLM
         symptoms_text = self._build_symptoms_text(symptoms)
+        symptoms_summary = self._symptoms_to_list(symptoms)
 
         # 4. Run combined analysis via LLM
         llm_result = await run_skin_analysis(
@@ -76,7 +77,7 @@ class SkinService:
         prediction_data = {
             "user_id": user_id,
             "prediction_type": "skin_detection",
-            "input_symptoms": self._symptoms_to_list(symptoms),
+            "input_symptoms": symptoms_summary,
             "image_id": image_record["id"] if image_record else None,
             "predicted_condition": model_result["predicted_condition"],
             "confidence_score": model_result["confidence"],
@@ -87,6 +88,7 @@ class SkinService:
             "ai_response": {
                 "model_prediction": model_result,
                 "llm_analysis": llm_result,
+                "symptoms_summary": symptoms_summary,
             },
         }
 
@@ -103,13 +105,66 @@ class SkinService:
             "predicted_class": model_result["predicted_class"],
             "confidence_score": model_result["confidence"],
             "severity_level": model_result["severity"],
+            "combined_assessment": llm_result.get("combined_assessment", ""),
+            "urgency_level": llm_result.get("urgency_level", "low"),
+            "possible_causes": llm_result.get("possible_causes", []),
+            "is_urgent": model_result.get("is_urgent", False) or llm_result.get("urgent", False),
             "precautions": llm_result.get("precautions", []),
             "home_remedies": llm_result.get("home_remedies", []),
             "recommended_specialist": "Dermatologist",
             "next_steps": llm_result.get("next_steps", []),
+            "symptoms_summary": symptoms_summary,
+            "all_predictions": model_result.get("all_predictions", {}),
             "image_url": public_url,
             "prediction_id": prediction_id,
-            "combined_assessment": llm_result.get("combined_assessment", ""),
+        }
+
+    async def get_prediction(self, user_id: str, prediction_id: str) -> Optional[Dict[str, Any]]:
+        """Get a single skin analysis prediction for reopening a report."""
+        record = self.supabase.select_one(
+            "disease_predictions",
+            filters={"id": prediction_id, "user_id": user_id},
+        )
+        if not record:
+            return None
+
+        ai_response = record.get("ai_response", {}) or {}
+        model_pred = ai_response.get("model_prediction", {})
+        llm_analysis = ai_response.get("llm_analysis", {})
+        symptoms_summary = ai_response.get("symptoms_summary", record.get("input_symptoms", []))
+
+        # Resolve image URL
+        image_url = None
+        if record.get("image_id"):
+            try:
+                img_record = self.supabase.select_one(
+                    "uploaded_images",
+                    filters={"id": record["image_id"]},
+                )
+                image_url = img_record.get("public_url") if img_record else None
+            except Exception:
+                pass
+
+        return {
+            "id": record["id"],
+            "user_id": record["user_id"],
+            "predicted_condition": record.get("predicted_condition", "Unknown"),
+            "predicted_class": model_pred.get("predicted_class"),
+            "confidence_score": record.get("confidence_score", 0),
+            "severity_level": self._risk_to_severity(record.get("risk_level", "medium")),
+            "combined_assessment": llm_analysis.get("combined_assessment"),
+            "urgency_level": llm_analysis.get("urgency_level", "low"),
+            "possible_causes": llm_analysis.get("possible_causes", []),
+            "is_urgent": model_pred.get("is_urgent", False) or llm_analysis.get("urgent", False),
+            "precautions": record.get("precautions", []),
+            "home_remedies": record.get("home_remedies", []),
+            "recommended_specialist": record.get("recommended_specialist", "Dermatologist"),
+            "next_steps": llm_analysis.get("next_steps", []),
+            "symptoms_summary": symptoms_summary,
+            "all_predictions": model_pred.get("all_predictions"),
+            "image_url": image_url,
+            "prediction_id": record["id"],
+            "created_at": record.get("created_at"),
         }
 
     async def get_history(self, user_id: str) -> Dict[str, Any]:
@@ -119,7 +174,28 @@ class SkinService:
             filters={"user_id": user_id, "prediction_type": "skin_detection"},
             order_by="-created_at",
         )
-        return {"predictions": predictions, "total": len(predictions)}
+
+        # Enrich with image URLs
+        items = []
+        for p in predictions:
+            image_url = None
+            if p.get("image_id"):
+                try:
+                    img = self.supabase.select_one("uploaded_images", filters={"id": p["image_id"]})
+                    image_url = img.get("public_url") if img else None
+                except Exception:
+                    pass
+
+            items.append({
+                "id": p["id"],
+                "predicted_condition": p.get("predicted_condition", "Unknown"),
+                "confidence_score": p.get("confidence_score", 0),
+                "severity_level": self._risk_to_severity(p.get("risk_level", "medium")),
+                "image_url": image_url,
+                "created_at": p.get("created_at"),
+            })
+
+        return {"predictions": items, "total": len(items)}
 
     def _build_symptoms_text(self, symptoms: SkinSymptomsInput) -> str:
         """Build descriptive text from symptom flags."""
@@ -134,6 +210,10 @@ class SkinService:
             parts.append("burning sensation")
         if symptoms.fever:
             parts.append("fever")
+        if symptoms.swelling:
+            parts.append("swelling")
+        if symptoms.affected_body_part:
+            parts.append(f"affected area: {symptoms.affected_body_part}")
         if symptoms.duration:
             parts.append(f"duration: {symptoms.duration}")
         if symptoms.allergy_history:
@@ -145,12 +225,21 @@ class SkinService:
     def _symptoms_to_list(self, symptoms: SkinSymptomsInput) -> list:
         """Convert symptoms to a list of active symptom strings."""
         active = []
-        for field in ["itching", "redness", "pain", "burning_sensation", "fever"]:
+        for field in ["itching", "redness", "pain", "burning_sensation", "fever", "swelling"]:
             if getattr(symptoms, field, False):
                 active.append(field.replace("_", " "))
+        if symptoms.affected_body_part:
+            active.append(f"affected: {symptoms.affected_body_part}")
+        if symptoms.duration:
+            active.append(f"duration: {symptoms.duration}")
         return active
 
     def _severity_to_risk(self, severity: str) -> str:
         """Map severity to risk level."""
         mapping = {"mild": "low", "moderate": "medium", "severe": "high"}
         return mapping.get(severity, "medium")
+
+    def _risk_to_severity(self, risk: str) -> str:
+        """Map risk level back to severity."""
+        mapping = {"low": "mild", "medium": "moderate", "high": "severe"}
+        return mapping.get(risk, "moderate")
