@@ -1,0 +1,164 @@
+/* ═══ PCOD/PCOS ASSESSMENT MODULE ═══ */
+
+/* ─── Assessment Page ─── */
+.pcod-page{display:flex;flex-direction:column;gap:1.25rem}
+.pcod-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
+.pcod-header-left{display:flex;align-items:center;gap:.75rem}
+.pcod-header-icon{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(168,85,247,.25)}
+.pcod-header h1{font-size:1.35rem;font-weight:800;color:#0f172a;margin:0;line-height:1.2}
+.pcod-header-sub{font-size:.82rem;color:#64748b;margin:0}
+.pcod-history-btn{display:flex;align-items:center;gap:.4rem;padding:.55rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;font-size:.8rem;font-weight:600;color:#475569;cursor:pointer;transition:.2s}
+.pcod-history-btn:hover{border-color:#d8b4fe;color:#7c3aed;background:#faf5ff}
+
+/* Stepper */
+.pcod-stepper{display:flex;align-items:center;gap:0;padding:0 .5rem}
+.pcod-step-item{display:flex;align-items:center;gap:.5rem;flex:1;position:relative}
+.pcod-step-item:not(:last-child)::after{content:'';flex:1;height:2px;background:#e2e8f0;margin:0 .5rem;transition:.3s}
+.pcod-step-item:not(:last-child).pcod-step-done::after{background:linear-gradient(90deg,#a855f7,#d8b4fe)}
+.pcod-step-circle{width:32px;height:32px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#94a3b8;flex-shrink:0;transition:.3s;border:2px solid transparent}
+.pcod-step-done .pcod-step-circle{background:#a855f7;color:#fff;border-color:#a855f7}
+.pcod-step-active .pcod-step-circle{background:#faf5ff;color:#7c3aed;border-color:#a855f7;box-shadow:0 0 0 4px rgba(168,85,247,.15)}
+.pcod-step-label{font-size:.72rem;font-weight:600;color:#94a3b8;white-space:nowrap}
+.pcod-step-done .pcod-step-label{color:#7c3aed}
+.pcod-step-active .pcod-step-label{color:#0f172a}
+@media(max-width:640px){.pcod-step-label{display:none}.pcod-stepper{gap:.25rem}}
+
+/* Question Card */
+.pcod-question-card{background:#fff;border:1px solid #e8edf5;border-radius:16px;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.04);animation:pcod-slide-in .3s ease}
+.pcod-question-card h2{font-size:1.05rem;font-weight:700;color:#0f172a;margin:0 0 .25rem;display:flex;align-items:center;gap:.4rem}
+.pcod-question-card h2 svg{color:#a855f7}
+.pcod-step-subtitle{font-size:.78rem;color:#94a3b8;margin:0 0 1.25rem}
+
+@keyframes pcod-slide-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+
+.pcod-fields{display:flex;flex-direction:column;gap:1.15rem;margin-bottom:1.25rem}
+.pcod-field{display:flex;flex-direction:column;gap:.4rem}
+.pcod-field-label{font-size:.84rem;font-weight:600;color:#334155;display:flex;align-items:center;gap:.25rem}
+.pcod-field-req{color:#ef4444;font-size:.75rem}
+
+/* Yes/No Toggle Cards */
+.pcod-toggle-row{display:flex;gap:.5rem}
+.pcod-toggle-card{flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;padding:.6rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#fafbfd;font-size:.82rem;font-weight:600;color:#64748b;cursor:pointer;transition:.2s}
+.pcod-toggle-card:hover{border-color:#d8b4fe;background:#faf5ff}
+.pcod-toggle-card svg{flex-shrink:0}
+.pcod-toggle-yes{border-color:#a855f7;background:#faf5ff;color:#7c3aed}
+.pcod-toggle-no{border-color:#e2e8f0;background:#fff;color:#64748b}
+
+/* Select & Input */
+.pcod-select{width:100%;max-width:320px;border:1.5px solid #e2e8f0;border-radius:10px;padding:.55rem .75rem;font-size:.82rem;outline:none;background:#fff;font-family:inherit;transition:.2s}
+.pcod-select:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.1)}
+.pcod-number-input{width:100%;max-width:160px;border:1.5px solid #e2e8f0;border-radius:10px;padding:.55rem .75rem;font-size:.82rem;outline:none;background:#fff;font-family:inherit;transition:.2s}
+.pcod-number-input:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.1)}
+
+/* Navigation */
+.pcod-nav{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+.pcod-nav-btn{display:flex;align-items:center;gap:.35rem;padding:.6rem 1.2rem;border-radius:10px;font-size:.82rem;font-weight:600;cursor:pointer;transition:.2s;border:none}
+.pcod-nav-prev{background:#f1f5f9;color:#475569}
+.pcod-nav-prev:hover{background:#e2e8f0}
+.pcod-nav-next{background:linear-gradient(135deg,#a855f7,#8b5cf6);color:#fff}
+.pcod-nav-next:hover{box-shadow:0 4px 14px rgba(168,85,247,.3)}
+.pcod-nav-submit{background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;padding:.65rem 1.5rem}
+.pcod-nav-submit:hover:not(:disabled){box-shadow:0 6px 20px rgba(236,72,153,.25)}
+.pcod-nav-submit:disabled{opacity:.5;cursor:not-allowed}
+
+.pcod-error{background:#fef2f2;color:#dc2626;padding:.55rem .85rem;border-radius:10px;font-size:.8rem;border:1px solid #fecaca;margin-top:.5rem}
+
+/* Loading Overlay */
+.pcod-loading-overlay{position:fixed;inset:0;background:rgba(248,250,252,.92);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center}
+.pcod-loading-card{background:#fff;border-radius:20px;padding:2.5rem 3rem;box-shadow:0 20px 60px rgba(0,0,0,.12);text-align:center;max-width:400px;width:90%;animation:pcod-fade-in .3s ease}
+.pcod-loading-card h3{font-size:1.1rem;font-weight:700;color:#0f172a;margin:0 0 1.5rem}
+.pcod-loading-steps{display:flex;flex-direction:column;gap:.65rem;text-align:left}
+.pcod-loading-step{display:flex;align-items:center;gap:.65rem;padding:.5rem .65rem;border-radius:8px;font-size:.82rem;font-weight:500;color:#94a3b8;transition:.3s}
+.pcod-loading-step-active{color:#7c3aed;background:#faf5ff;font-weight:600}
+.pcod-loading-step-done{color:#16a34a}
+.pcod-loading-step-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.7rem}
+.pcod-loading-step-active .pcod-loading-step-icon{background:#a855f7;color:#fff;animation:pcod-pulse 1.5s infinite}
+.pcod-loading-step-done .pcod-loading-step-icon{background:#dcfce7;color:#16a34a}
+
+@keyframes pcod-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@keyframes pcod-fade-in{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* History Modal */
+.pcod-hist-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem}
+.pcod-hist-modal{background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:80vh;display:flex;flex-direction:column;animation:pcod-fade-in .25s ease;overflow:hidden}
+.pcod-hist-top{display:flex;align-items:center;justify-content:space-between;padding:1.15rem 1.25rem;border-bottom:1px solid #e8edf5}
+.pcod-hist-top h2{font-size:1.05rem;font-weight:700;color:#0f172a;margin:0}
+.pcod-hist-top button{background:none;border:1px solid #e8edf5;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer}
+.pcod-hist-list{overflow-y:auto;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.5rem}
+.pcod-hist-item{display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;background:#fafbfd;border:1px solid #f1f5f9;border-radius:12px;cursor:pointer;transition:.15s}
+.pcod-hist-item:hover{border-color:#d8b4fe;background:#faf5ff}
+.pcod-hist-info{flex:1;min-width:0}
+.pcod-hist-info strong{display:block;font-size:.85rem;color:#0f172a}
+.pcod-hist-info small{font-size:.72rem;color:#94a3b8}
+.pcod-hist-empty{text-align:center;color:#94a3b8;font-size:.82rem;padding:2rem}
+.pcod-hist-view-btn{padding:.3rem .65rem;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-size:.72rem;font-weight:600;color:#7c3aed;cursor:pointer;white-space:nowrap;transition:.15s}
+.pcod-hist-view-btn:hover{background:#faf5ff;border-color:#d8b4fe}
+
+/* Risk Badge (shared) */
+.pcod-risk-badge{display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .55rem;border-radius:6px;font-size:.68rem;font-weight:700;white-space:nowrap;text-transform:uppercase}
+.pcod-risk-low{background:#dcfce7;color:#16a34a}
+.pcod-risk-medium{background:#fef3c7;color:#b45309}
+.pcod-risk-high{background:#fee2e2;color:#dc2626}
+
+/* ═══ PCOD RESULTS PAGE ═══ */
+.pcodr-page{display:flex;flex-direction:column;gap:1.25rem;animation:pcod-fade-in .4s ease}
+.pcodr-back-btn{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem .85rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;font-size:.8rem;font-weight:600;color:#475569;cursor:pointer;transition:.15s;align-self:flex-start}
+.pcodr-back-btn:hover{border-color:#d8b4fe;color:#7c3aed}
+
+/* Report Header */
+.pcodr-report-header{background:linear-gradient(135deg,#7c3aed,#a855f7,#ec4899);border-radius:16px;padding:1.5rem 1.75rem;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.pcodr-report-header h1{font-size:1.3rem;font-weight:800;margin:0}
+.pcodr-report-meta{font-size:.78rem;opacity:.8;margin:.2rem 0 0}
+.pcodr-report-id{font-size:.7rem;opacity:.6;font-family:monospace}
+
+/* Risk Score Card */
+.pcodr-risk-card{background:#fff;border:1px solid #e8edf5;border-radius:16px;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.pcodr-score-ring{width:100px;height:100px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;flex-shrink:0;position:relative}
+.pcodr-score-ring svg{position:absolute;width:100%;height:100%;transform:rotate(-90deg)}
+.pcodr-score-ring circle{fill:none;stroke-width:6;stroke-linecap:round}
+.pcodr-score-bg{stroke:#f1f5f9}
+.pcodr-score-fill{transition:stroke-dashoffset 1s ease}
+.pcodr-score-value{font-size:1.35rem;font-weight:800;color:#0f172a;z-index:1}
+.pcodr-score-label{font-size:.65rem;color:#94a3b8;z-index:1}
+.pcodr-risk-info{flex:1;display:flex;flex-direction:column;gap:.5rem}
+.pcodr-risk-info h2{font-size:1rem;font-weight:700;color:#0f172a;margin:0}
+.pcodr-badges{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.pcodr-urgency-badge{display:inline-flex;align-items:center;gap:.25rem;padding:.25rem .6rem;border-radius:6px;font-size:.7rem;font-weight:700}
+.pcodr-urgency-low{background:#dcfce7;color:#16a34a}
+.pcodr-urgency-medium{background:#fef3c7;color:#b45309}
+.pcodr-urgency-high{background:#fee2e2;color:#dc2626;animation:pcod-pulse 2s infinite}
+.pcodr-condition-chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.pcodr-condition-chip{padding:.2rem .55rem;border-radius:6px;background:#fce7f3;color:#be185d;font-size:.72rem;font-weight:600}
+.pcodr-indicator-chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.pcodr-indicator-chip{padding:.2rem .5rem;border-radius:6px;background:#f5f3ff;font-size:.7rem;font-weight:500;color:#6d28d9;text-transform:capitalize}
+
+/* Content Cards */
+.pcodr-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:768px){.pcodr-cards-grid{grid-template-columns:1fr}}
+.pcodr-card{background:#fff;border:1px solid #e8edf5;border-radius:16px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.pcodr-card-full{grid-column:1/-1}
+.pcodr-card h3{font-size:.88rem;font-weight:700;color:#0f172a;margin:0 0 .75rem;display:flex;align-items:center;gap:.4rem}
+.pcodr-card h3 svg{color:#a855f7;flex-shrink:0}
+.pcodr-assessment-text{font-size:.85rem;color:#334155;line-height:1.65;margin:0}
+.pcodr-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.4rem}
+.pcodr-list li{position:relative;padding-left:1rem;font-size:.82rem;color:#334155;line-height:1.5}
+.pcodr-list li::before{content:'';position:absolute;left:0;top:.5em;width:5px;height:5px;border-radius:50%;background:#a855f7}
+.pcodr-list-green li::before{background:#16a34a}
+.pcodr-list-pink li::before{background:#ec4899}
+.pcodr-list-amber li::before{background:#d97706}
+.pcodr-list-blue li::before{background:#3b82f6}
+.pcodr-insight-text{font-size:.83rem;color:#475569;line-height:1.6;margin:0;padding:.5rem .75rem;background:#faf5ff;border-radius:8px;border-left:3px solid #a855f7}
+
+.pcodr-disclaimer{display:flex;align-items:flex-start;gap:.5rem;padding:.75rem 1rem;background:#fefce8;border:1px solid #fef08a;border-radius:10px;font-size:.78rem;color:#854d0e;line-height:1.5}
+.pcodr-disclaimer svg{flex-shrink:0;margin-top:2px}
+
+/* Doctor Cards - reuse skinr-doctors-* classes */
+.pcodr-doctors-section{background:#fff;border:1px solid #e8edf5;border-radius:16px;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.pcodr-doctors-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.pcodr-doctors-header h2{font-size:1rem;font-weight:700;color:#0f172a;margin:0;display:flex;align-items:center;gap:.4rem}
+
+/* Toast */
+.pcod-toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);padding:.7rem 1.25rem;border-radius:12px;font-size:.82rem;font-weight:600;color:#fff;z-index:200;display:flex;align-items:center;gap:.4rem;animation:pcod-toast-in .3s ease;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.pcod-toast-success{background:#16a34a}
+.pcod-toast-error{background:#dc2626}
+@keyframes pcod-toast-in{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}

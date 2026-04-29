@@ -26,13 +26,22 @@ async function request(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers, redirect: 'manual' });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch (networkErr) {
+    throw new Error('Cannot connect to server. Please check if the backend is running.');
+  }
 
   // Handle 307/308 redirects manually to preserve Authorization header
   if (res.status === 307 || res.status === 308) {
     const location = res.headers.get('location');
     if (location) {
-      res = await fetch(location, { ...options, headers, redirect: 'follow' });
+      try {
+        res = await fetch(location, { ...options, headers });
+      } catch {
+        throw new Error('Cannot connect to server.');
+      }
     }
   }
 
@@ -116,6 +125,7 @@ export const skinAPI = {
 export const pcodAPI = {
   assess: (questionnaire) => post('/api/pcod/assess', questionnaire),
   getHistory: () => get('/api/pcod/history'),
+  getAssessment: (id) => get(`/api/pcod/assessments/${id}`),
 };
 
 /* ── Appointments ────────────────────────────────────────────────── */

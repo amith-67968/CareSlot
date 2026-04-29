@@ -325,3 +325,82 @@ async def run_skin_analysis(
             "next_steps": ["Schedule a dermatology appointment"],
             "urgent": False,
         }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# PCOD / PCOS ANALYSIS CHAIN
+# ═══════════════════════════════════════════════════════════════════════
+
+PCOD_ANALYSIS_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are CareSlot's women's health AI assistant providing PRELIMINARY PCOD/PCOS risk guidance.
+
+IMPORTANT: This is a RISK ASSESSMENT, NOT a diagnosis. Always recommend consulting a gynecologist or endocrinologist.
+
+Risk assessment results:
+- Risk Level: {risk_level}
+- Risk Score: {risk_score}%
+- Conditions Flagged: {conditions_flagged}
+- Key Indicators: {key_indicators}
+
+Patient symptoms: {symptoms_text}
+
+Based on this assessment, provide a comprehensive explanation as JSON:
+{{
+    "combined_assessment": "A detailed, plain-English explanation of the risk assessment results. Explain what the flagged conditions mean, how the symptoms relate to potential PCOD/PCOS, and what the risk level implies. Write 4-6 sentences in a caring, professional tone.",
+    "urgency_level": "low" or "medium" or "high",
+    "possible_causes": ["list", "of", "possible", "underlying", "causes"],
+    "lifestyle_recommendations": ["list", "of", "specific", "lifestyle", "changes"],
+    "dietary_suggestions": ["list", "of", "dietary", "recommendations"],
+    "exercise_recommendations": ["list", "of", "exercise", "suggestions"],
+    "hormonal_insights": "Brief explanation of potential hormonal factors involved.",
+    "fertility_note": "Brief note about fertility implications if relevant, or 'Not applicable' if risk is low.",
+    "doctor_consultation_needed": true or false,
+    "urgent": true or false
+}}
+
+Respond ONLY with valid JSON."""),
+    ("human", "Please explain my PCOD/PCOS risk assessment results."),
+])
+
+
+def get_pcod_analysis_chain():
+    """Build the PCOD analysis chain."""
+    llm = get_llm()
+    return PCOD_ANALYSIS_PROMPT | llm | _parse_json_output
+
+
+async def run_pcod_analysis(
+    risk_level: str,
+    risk_score: float,
+    conditions_flagged: list,
+    key_indicators: list,
+    symptoms_text: str,
+) -> Dict[str, Any]:
+    """Execute the PCOD analysis chain for LLM explanation."""
+    chain = get_pcod_analysis_chain()
+
+    try:
+        result = await chain.ainvoke({
+            "risk_level": risk_level,
+            "risk_score": f"{risk_score * 100:.1f}",
+            "conditions_flagged": ", ".join(conditions_flagged) if conditions_flagged else "None",
+            "key_indicators": ", ".join(key_indicators) if key_indicators else "None",
+            "symptoms_text": symptoms_text,
+        })
+        return result
+
+    except Exception as e:
+        logger.error(f"PCOD analysis chain error: {e}")
+        return {
+            "combined_assessment": "AI explanation could not be generated. Please consult a gynecologist for proper evaluation.",
+            "urgency_level": "medium",
+            "possible_causes": [],
+            "lifestyle_recommendations": [],
+            "dietary_suggestions": [],
+            "exercise_recommendations": [],
+            "hormonal_insights": "",
+            "fertility_note": "",
+            "doctor_consultation_needed": True,
+            "urgent": False,
+        }
+

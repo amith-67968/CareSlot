@@ -52,14 +52,10 @@ export function AuthProvider({ children }) {
       email: data.email,
     };
 
-    // Persist remember preference
+    // Always persist to localStorage by default for better UX
+    localStorage.setItem(AUTH_KEY, JSON.stringify(userData));
     if (remember) {
       localStorage.setItem(REMEMBER_KEY, 'true');
-      localStorage.setItem(AUTH_KEY, JSON.stringify(userData));
-    } else {
-      localStorage.removeItem(REMEMBER_KEY);
-      localStorage.removeItem(AUTH_KEY);
-      sessionStorage.setItem(AUTH_KEY, JSON.stringify(userData));
     }
 
     setUser(userData);

@@ -10,8 +10,7 @@ import ProfilePopup from '../components/ProfilePopup';
 import ChatPopup from '../components/ChatPopup';
 import {
   LayoutDashboard, ScanEye, CalendarCheck, MapPin,
-  LogOut, Menu, X, HeartPulse, ChevronRight,
-  UserCircle, Settings, Search,
+  Menu, X, HeartPulse, ChevronRight, Search,
 } from 'lucide-react';
 
 const NAV = [
@@ -102,6 +101,14 @@ export default function DashboardLayout() {
           </div>
 
           <div className="dash-topbar-right">
+            <div
+              className="dash-avatar"
+              onClick={() => setProfileOpen(true)}
+              role="button"
+              tabIndex={0}
+            >
+              {initial}
+            </div>
           </div>
         </header>
 

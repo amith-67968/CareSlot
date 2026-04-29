@@ -7,6 +7,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Overview from './pages/dashboard/Overview';
 import Detection from './pages/dashboard/Detection';
 import SkinResults from './pages/dashboard/SkinResults';
+import PCODResults from './pages/dashboard/PCODResults';
 import Appointments from './pages/dashboard/Appointments';
 import Doctors from './pages/dashboard/Doctors';
 
@@ -32,6 +33,7 @@ function App() {
         <Route index element={<Overview />} />
         <Route path="detection" element={<Detection />} />
         <Route path="skin-results/:predictionId" element={<SkinResults />} />
+        <Route path="pcod-results/:assessmentId" element={<PCODResults />} />
         <Route path="appointments" element={<Appointments />} />
         <Route path="hospitals" element={<Doctors />} />
       </Route>
