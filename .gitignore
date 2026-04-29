@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ML Models (large binaries)
+ml_models/*.h5
+ml_models/*.pkl
+ml_models/*.pt
+ml_models/*.pth
+ml_models/*.onnx
+ml_models/*.tflite
+ml_models/*.bin
+!ml_models/.gitkeep
+
+# Logs
+*.log
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Supabase
+Backend/supabase/.temp/
+
+# Node (edge functions)
+node_modules/
+
+# Misc
+*.bak
+*.tmp
