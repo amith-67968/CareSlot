@@ -31,6 +31,7 @@ def get_llm() -> ChatOllama:
         top_p=0.9,
         num_ctx=4096,
         repeat_penalty=1.1,
+        timeout=120,  # Allow enough time for cold-start model loading
     )
 
     return llm
@@ -49,6 +50,7 @@ def get_creative_llm() -> ChatOllama:
         temperature=0.6,
         top_p=0.95,
         num_ctx=4096,
+        timeout=120,
     )
 
 

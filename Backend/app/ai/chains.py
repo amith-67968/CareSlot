@@ -51,12 +51,24 @@ IMPORTANT RULES:
 1. NEVER provide a final medical diagnosis
 2. Always recommend consulting a qualified healthcare professional
 3. Be conversational, empathetic, and helpful
-4. Ask follow-up questions to better understand symptoms
-5. If symptoms sound serious, clearly recommend seeking immediate medical attention
-6. Provide preliminary guidance, precautions, and lifestyle recommendations
+4. If symptoms sound serious, clearly recommend seeking immediate medical attention
+5. Provide preliminary guidance, precautions, and lifestyle recommendations
 
 Medical knowledge context:
-{context}"""),
+{context}
+
+You MUST respond with valid JSON in EXACTLY this format:
+{{
+    "summary": "A warm, empathetic response to the user. If they describe symptoms, acknowledge them. If it's a greeting or general question, respond naturally.",
+    "prediction": "If health symptoms are mentioned, predict the most likely condition(s). Otherwise set to null.",
+    "risk_level": "low or medium or high or critical. Set to null if no symptoms mentioned.",
+    "precautions": ["List of precautions if symptoms are mentioned, otherwise empty array"],
+    "home_remedies": ["List of safe home remedies if applicable, otherwise empty array"],
+    "recommended_specialist": "Type of doctor to consult if symptoms mentioned, otherwise null",
+    "next_steps": ["Recommended next steps if symptoms mentioned, otherwise empty array"]
+}}
+
+Respond ONLY with valid JSON. No text before or after."""),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{message}"),
 ])
@@ -123,6 +135,7 @@ def get_symptom_analysis_chain():
 def get_conversation_chain():
     """
     Build the multi-turn conversation chain with RAG context.
+    Returns structured JSON via JsonOutputParser.
     """
     llm = get_llm()
     retriever = get_retriever(k=3)
@@ -135,6 +148,7 @@ def get_conversation_chain():
         }
         | CONVERSATION_PROMPT
         | llm
+        | JsonOutputParser()
     )
 
     return chain
@@ -209,7 +223,7 @@ async def run_symptom_analysis(
 async def run_conversation(
     message: str,
     chat_history: list = None,
-) -> str:
+) -> Dict[str, Any]:
     """
     Execute the conversation chain.
 
@@ -218,16 +232,57 @@ async def run_conversation(
         chat_history: Previous messages in the conversation.
 
     Returns:
-        AI response string.
+        Structured analysis result dict.
     """
-    chain = get_conversation_chain()
+    try:
+        chain = get_conversation_chain()
 
-    result = await chain.ainvoke({
-        "message": message,
-        "chat_history": chat_history or [],
-    })
+        result = await chain.ainvoke({
+            "message": message,
+            "chat_history": chat_history or [],
+        })
 
-    return result.content
+        # Ensure all required fields exist
+        defaults = {
+            "summary": "I received your message.",
+            "prediction": None,
+            "risk_level": None,
+            "precautions": [],
+            "home_remedies": [],
+            "recommended_specialist": None,
+            "next_steps": [],
+        }
+
+        for key, default in defaults.items():
+            if key not in result or result[key] is None:
+                result[key] = default
+
+        # Determine if this is a structured health response
+        result["is_structured"] = bool(
+            result.get("prediction") or
+            result.get("precautions") or
+            result.get("home_remedies")
+        )
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Conversation chain error: {e}")
+        return {
+            "summary": (
+                "I'm sorry, I'm having trouble processing your request right now. "
+                "This could be because the AI model is still loading. "
+                "Please try again in a moment. If your symptoms are severe or urgent, "
+                "please seek immediate medical attention."
+            ),
+            "prediction": None,
+            "risk_level": None,
+            "precautions": [],
+            "home_remedies": [],
+            "recommended_specialist": None,
+            "next_steps": [],
+            "is_structured": False,
+        }
 
 
 async def run_skin_analysis(

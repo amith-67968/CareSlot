@@ -5,6 +5,7 @@ Orchestrates AI symptom analysis and conversation management.
 
 from app.ai.chains import run_symptom_analysis, run_conversation
 from app.services.supabase_service import SupabaseService
+from app.services.doctor_service import DoctorService
 from typing import Dict, Any, List, Optional
 from langchain_core.messages import HumanMessage, AIMessage
 import uuid
@@ -12,12 +13,45 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Map common specialist names to DoctorService specialty keys
+SPECIALIST_MAP = {
+    "cardiologist": "cardiologist",
+    "dermatologist": "dermatologist",
+    "gynecologist": "gynecologist",
+    "endocrinologist": "endocrinologist",
+    "pulmonologist": "pulmonologist",
+    "neurologist": "neurologist",
+    "orthopedist": "orthopedist",
+    "orthopedic": "orthopedist",
+    "psychiatrist": "psychiatrist",
+    "gastroenterologist": "gastroenterologist",
+    "general physician": "general_physician",
+    "general practitioner": "general_physician",
+    "family doctor": "general_physician",
+    "emergency": "emergency",
+    "ent": "general_physician",
+    "ophthalmologist": "general_physician",
+    "urologist": "general_physician",
+}
+
+
+def _resolve_specialty(specialist_text: Optional[str]) -> Optional[str]:
+    """Map LLM-recommended specialist text to a DoctorService specialty key."""
+    if not specialist_text:
+        return None
+    lower = specialist_text.lower().strip()
+    for keyword, key in SPECIALIST_MAP.items():
+        if keyword in lower:
+            return key
+    return "general_physician"
+
 
 class ChatService:
     """Service for AI-powered health chat and symptom analysis."""
 
     def __init__(self):
         self.supabase = SupabaseService()
+        self.doctor_service = DoctorService()
 
     async def analyze_symptoms(
         self,
@@ -81,26 +115,76 @@ class ChatService:
         user_id: str,
         message: str,
         session_id: Optional[str] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
         Multi-turn conversation with chat history.
+        Now returns structured health data + nearby doctors.
         """
         if not session_id:
             session_id = str(uuid.uuid4())
 
-        # Load chat history for this session
-        chat_history = await self._get_session_messages(user_id, session_id)
+        try:
+            # Load chat history for this session
+            chat_history = await self._get_session_messages(user_id, session_id)
 
-        # Convert to LangChain message objects
-        lc_history = []
-        for msg in chat_history:
-            if msg["role"] == "user":
-                lc_history.append(HumanMessage(content=msg["message"]))
-            else:
-                lc_history.append(AIMessage(content=msg["message"]))
+            # Convert to LangChain message objects
+            lc_history = []
+            for msg in chat_history:
+                if msg["role"] == "user":
+                    lc_history.append(HumanMessage(content=msg["message"]))
+                else:
+                    lc_history.append(AIMessage(content=msg["message"]))
 
-        # Run conversation chain
-        response = await run_conversation(message, lc_history)
+            # Run structured conversation chain
+            ai_result = await run_conversation(message, lc_history)
+
+        except Exception as e:
+            logger.error(f"Conversation chain failed: {e}")
+            ai_result = {
+                "summary": (
+                    "I'm sorry, I encountered an issue while processing your message. "
+                    "Please try again in a moment."
+                ),
+                "prediction": None,
+                "risk_level": None,
+                "precautions": [],
+                "home_remedies": [],
+                "recommended_specialist": None,
+                "next_steps": [],
+                "is_structured": False,
+            }
+
+        # Build response text from summary
+        response_text = ai_result.get("summary", "I received your message.")
+
+        # Fetch nearby doctors if location provided and specialist recommended
+        nearby_doctors = []
+        specialist = ai_result.get("recommended_specialist")
+        if latitude is not None and longitude is not None and specialist:
+            try:
+                specialty_key = _resolve_specialty(specialist)
+                doctor_results = await self.doctor_service.find_nearby(
+                    latitude=latitude,
+                    longitude=longitude,
+                    specialty=specialty_key,
+                    radius=5000,
+                )
+                for doc in doctor_results.get("results", [])[:5]:
+                    location = doc.get("location", {})
+                    nearby_doctors.append({
+                        "name": doc.get("name", ""),
+                        "address": doc.get("address", ""),
+                        "rating": doc.get("rating"),
+                        "total_ratings": doc.get("total_ratings"),
+                        "is_open_now": doc.get("is_open_now"),
+                        "place_id": doc.get("place_id", ""),
+                        "latitude": location.get("latitude"),
+                        "longitude": location.get("longitude"),
+                    })
+            except Exception as e:
+                logger.error(f"Doctor search failed: {e}")
 
         # Store messages
         try:
@@ -114,14 +198,23 @@ class ChatService:
                 "user_id": user_id,
                 "session_id": session_id,
                 "role": "assistant",
-                "message": response,
+                "message": response_text,
+                "metadata": ai_result,
             })
         except Exception as e:
             logger.error(f"Failed to store chat message: {e}")
 
         return {
-            "response": response,
+            "response": response_text,
             "session_id": session_id,
+            "prediction": ai_result.get("prediction"),
+            "risk_level": ai_result.get("risk_level"),
+            "precautions": ai_result.get("precautions", []),
+            "home_remedies": ai_result.get("home_remedies", []),
+            "recommended_specialist": specialist,
+            "next_steps": ai_result.get("next_steps", []),
+            "nearby_doctors": nearby_doctors,
+            "is_structured": ai_result.get("is_structured", False),
         }
 
     async def get_chat_history(self, user_id: str, limit: int = 20) -> Dict[str, Any]:
@@ -163,3 +256,4 @@ class ChatService:
             )
         except Exception:
             return []
+

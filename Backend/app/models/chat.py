@@ -4,7 +4,7 @@ Request/response schemas for the AI symptom chatbot.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
 from enum import Enum
 
@@ -37,6 +37,8 @@ class ChatConversationRequest(BaseModel):
         None,
         description="Session ID for continuing a conversation. Omit for new session.",
     )
+    latitude: Optional[float] = Field(None, ge=-90, le=90, description="User latitude for doctor search")
+    longitude: Optional[float] = Field(None, ge=-180, le=180, description="User longitude for doctor search")
 
 
 # ─── Response Schemas ─────────────────────────────────────────────────
@@ -56,6 +58,17 @@ class SymptomAnalysisResponse(BaseModel):
     session_id: Optional[str] = None
     prediction_id: Optional[str] = None
 
+class NearbyDoctorInfo(BaseModel):
+    """Compact doctor info returned inside chat responses."""
+    name: str
+    address: str
+    rating: Optional[float] = None
+    total_ratings: Optional[int] = None
+    is_open_now: Optional[bool] = None
+    place_id: str = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
 class ChatMessageResponse(BaseModel):
     """Single chat message in conversation history."""
     role: str
@@ -67,8 +80,14 @@ class ChatConversationResponse(BaseModel):
     """Response for multi-turn chat."""
     response: str
     session_id: str
+    prediction: Optional[str] = None
     risk_level: Optional[RiskLevel] = None
+    precautions: List[str] = Field(default_factory=list)
+    home_remedies: List[str] = Field(default_factory=list)
     recommended_specialist: Optional[str] = None
+    next_steps: List[str] = Field(default_factory=list)
+    nearby_doctors: List[NearbyDoctorInfo] = Field(default_factory=list)
+    is_structured: bool = Field(default=False, description="Whether response has structured health data")
     metadata: Optional[dict] = None
 
 class ChatHistoryResponse(BaseModel):

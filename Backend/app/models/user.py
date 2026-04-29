@@ -24,6 +24,10 @@ class SignUpRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, description="Minimum 8 characters")
     full_name: str = Field(..., min_length=2)
+    phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    blood_group: Optional[str] = None
 
 class SignInRequest(BaseModel):
     email: EmailStr

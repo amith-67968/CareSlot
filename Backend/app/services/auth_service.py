@@ -17,7 +17,7 @@ class AuthService:
     def __init__(self):
         self.supabase = SupabaseService()
 
-    async def sign_up(self, email: str, password: str, full_name: str) -> Dict[str, Any]:
+    async def sign_up(self, email: str, password: str, full_name: str, extra_profile: Dict[str, Any] = None) -> Dict[str, Any]:
         """Register a new user and create their profile."""
         try:
             auth_response = self.supabase.sign_up(email, password)
@@ -27,11 +27,14 @@ class AuthService:
                 # Create user profile (upsert to handle re-signups)
                 existing = self.supabase.select_one("user_profiles", filters={"user_id": user.id})
                 if not existing:
-                    self.supabase.insert("user_profiles", {
+                    profile_data = {
                         "user_id": user.id,
                         "full_name": full_name,
                         "email": email,
-                    })
+                    }
+                    if extra_profile:
+                        profile_data.update(extra_profile)
+                    self.supabase.insert("user_profiles", profile_data)
 
             return {
                 "user_id": user.id if user else None,

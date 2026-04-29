@@ -37,8 +37,8 @@ export function AuthProvider({ children }) {
     return userData;
   };
 
-  const signup = async (email, password, fullName) => {
-    const data = await authAPI.signup(email, password, fullName);
+  const signup = async (email, password, fullName, extraProfile = {}) => {
+    const data = await authAPI.signup(email, password, fullName, extraProfile);
 
     // If Supabase requires email confirmation, no token is returned
     if (!data.access_token) {

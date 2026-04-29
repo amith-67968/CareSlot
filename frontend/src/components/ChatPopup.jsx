@@ -1,14 +1,161 @@
 /**
  * CareSlot — Floating Chat Popup
- * AI health assistant as a floating widget.
+ * AI health assistant with structured output:
+ *  - Disease prediction with risk level
+ *  - Precautions & home remedies as bullet points
+ *  - Nearby doctor suggestions via Google Maps API
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { chatAPI } from '../services/api';
 import {
   MessageCircle, X, Send, RotateCcw,
   AlertTriangle, Loader2, HeartPulse,
+  ShieldAlert, Stethoscope, Home, MapPin,
+  Star, ExternalLink, ChevronRight, Activity,
+  Pill, Navigation,
 } from 'lucide-react';
+
+/* ── Helpers ──────────────────────────────────────────────────────── */
+
+function RiskBadge({ level }) {
+  if (!level) return null;
+  const config = {
+    low:      { label: 'Low Risk',      cls: 'chat-risk-low' },
+    medium:   { label: 'Medium Risk',   cls: 'chat-risk-medium' },
+    high:     { label: 'High Risk',     cls: 'chat-risk-high' },
+    critical: { label: 'Critical Risk', cls: 'chat-risk-critical' },
+  };
+  const c = config[level] || config.medium;
+  return <span className={`chat-risk-badge ${c.cls}`}>{c.label}</span>;
+}
+
+function StarRating({ rating }) {
+  if (!rating) return <span className="chat-doctor-no-rating">No ratings</span>;
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return (
+    <span className="chat-doctor-rating">
+      {[...Array(full)].map((_, i) => <Star key={i} size={11} className="chat-star-filled" />)}
+      {half && <Star size={11} className="chat-star-half" />}
+      <span className="chat-rating-num">{rating.toFixed(1)}</span>
+    </span>
+  );
+}
+
+function DoctorCard({ doc }) {
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(doc.name)}&query_place_id=${doc.place_id}`;
+  return (
+    <div className="chat-doctor-card">
+      <div className="chat-doctor-info">
+        <div className="chat-doctor-name">{doc.name}</div>
+        <StarRating rating={doc.rating} />
+        {doc.total_ratings && (
+          <span className="chat-doctor-reviews">({doc.total_ratings} reviews)</span>
+        )}
+        <div className="chat-doctor-address">
+          <MapPin size={10} />
+          <span>{doc.address}</span>
+        </div>
+        {doc.is_open_now !== null && doc.is_open_now !== undefined && (
+          <span className={`chat-doctor-status ${doc.is_open_now ? 'chat-open' : 'chat-closed'}`}>
+            {doc.is_open_now ? '● Open Now' : '● Closed'}
+          </span>
+        )}
+      </div>
+      <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="chat-maps-link" title="View on Google Maps">
+        <Navigation size={13} />
+      </a>
+    </div>
+  );
+}
+
+function StructuredResponse({ data }) {
+  return (
+    <div className="chat-structured-response">
+      {/* Summary */}
+      <div className="chat-section chat-section-summary">
+        <p>{data.response}</p>
+      </div>
+
+      {/* Prediction */}
+      {data.prediction && (
+        <div className="chat-section">
+          <div className="chat-section-title">
+            <Activity size={13} />
+            <span>Predicted Condition</span>
+            <RiskBadge level={data.risk_level} />
+          </div>
+          <p className="chat-prediction-text">{data.prediction}</p>
+        </div>
+      )}
+
+      {/* Precautions */}
+      {data.precautions?.length > 0 && (
+        <div className="chat-section">
+          <div className="chat-section-title">
+            <ShieldAlert size={13} />
+            <span>Precautions</span>
+          </div>
+          <ul className="chat-bullet-list">
+            {data.precautions.map((p, i) => <li key={i}>{p}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Home Remedies */}
+      {data.home_remedies?.length > 0 && (
+        <div className="chat-section">
+          <div className="chat-section-title">
+            <Home size={13} />
+            <span>Home Remedies</span>
+          </div>
+          <ul className="chat-bullet-list chat-bullet-remedies">
+            {data.home_remedies.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Next Steps */}
+      {data.next_steps?.length > 0 && (
+        <div className="chat-section">
+          <div className="chat-section-title">
+            <ChevronRight size={13} />
+            <span>Next Steps</span>
+          </div>
+          <ul className="chat-bullet-list chat-bullet-steps">
+            {data.next_steps.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Specialist */}
+      {data.recommended_specialist && (
+        <div className="chat-section chat-specialist-banner">
+          <Stethoscope size={13} />
+          <span>Recommended: <strong>{data.recommended_specialist}</strong></span>
+        </div>
+      )}
+
+      {/* Nearby Doctors */}
+      {data.nearby_doctors?.length > 0 && (
+        <div className="chat-section">
+          <div className="chat-section-title">
+            <MapPin size={13} />
+            <span>Nearby Doctors</span>
+          </div>
+          <div className="chat-doctors-list">
+            {data.nearby_doctors.map((doc, i) => (
+              <DoctorCard key={i} doc={doc} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Main Component ───────────────────────────────────────────────── */
 
 export default function ChatPopup() {
   const [open, setOpen] = useState(false);
@@ -16,13 +163,44 @@ export default function ChatPopup() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
+  const [userLocation, setUserLocation] = useState(null);
   const messagesEnd = useRef(null);
+
+  // Request geolocation on first open — with IP-based fallback
+  useEffect(() => {
+    if (!open || userLocation) return;
+
+    const fetchIPLocation = async () => {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        if (data.latitude && data.longitude) {
+          setUserLocation({ lat: data.latitude, lng: data.longitude });
+        }
+      } catch {
+        // Last resort — will just skip doctor suggestions
+      }
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {
+          console.log('Browser geolocation denied — falling back to IP location');
+          fetchIPLocation();
+        },
+        { enableHighAccuracy: false, timeout: 5000 },
+      );
+    } else {
+      fetchIPLocation();
+    }
+  }, [open, userLocation]);
 
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
 
@@ -32,10 +210,17 @@ export default function ChatPopup() {
     setLoading(true);
 
     try {
-      const data = await chatAPI.conversation(text, sessionId);
+      const data = await chatAPI.conversation(
+        text,
+        sessionId,
+        userLocation?.lat,
+        userLocation?.lng,
+      );
+
       const botMsg = {
         role: 'assistant',
         text: data.response || data.message || 'I received your message.',
+        structured: data.is_structured ? data : null,
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch (err) {
@@ -46,7 +231,7 @@ export default function ChatPopup() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [input, loading, sessionId, userLocation]);
 
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -76,7 +261,7 @@ export default function ChatPopup() {
           <div className="chat-popup-header">
             <div className="chat-popup-header-left">
               <div className="chat-popup-logo">
-                <HeartPulse size={16} />
+                <HeartPulse size={18} />
               </div>
               <div>
                 <h3>CareSlot AI</h3>
@@ -102,11 +287,39 @@ export default function ChatPopup() {
             <span>AI guidance only — not a medical diagnosis</span>
           </div>
 
+          {/* Location indicator */}
+          {open && !userLocation && (
+            <button
+              className="chat-popup-location-hint"
+              onClick={() => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    () => {},
+                    { enableHighAccuracy: false, timeout: 5000 },
+                  );
+                }
+              }}
+            >
+              <MapPin size={10} />
+              <span>📍 Fetching your location for doctor suggestions...</span>
+            </button>
+          )}
+
           {/* Messages */}
           <div className="chat-popup-messages">
             {messages.length === 0 && (
               <div className="chat-popup-empty">
-                <p>Hi! I'm your AI health assistant. Ask me about symptoms, conditions, or health queries.</p>
+                <div className="chat-popup-empty-icon">
+                  <HeartPulse size={28} />
+                </div>
+                <p>Hi! I'm your AI health assistant. Describe your symptoms and I'll help with:</p>
+                <div className="chat-popup-features">
+                  <span><Activity size={11} /> Disease prediction</span>
+                  <span><ShieldAlert size={11} /> Precautions</span>
+                  <span><Pill size={11} /> Home remedies</span>
+                  <span><MapPin size={11} /> Nearby doctors</span>
+                </div>
                 <div className="chat-popup-suggestions">
                   {['I have a headache', 'What is PCOD?', 'Skin rash remedies'].map((s) => (
                     <button key={s} onClick={() => { setInput(s); }} className="chat-popup-chip">
@@ -124,11 +337,15 @@ export default function ChatPopup() {
               >
                 {msg.role === 'assistant' && (
                   <div className="chat-popup-msg-avatar">
-                    <HeartPulse size={12} />
+                    <HeartPulse size={13} />
                   </div>
                 )}
                 <div className={`chat-popup-msg-bubble ${msg.error ? 'chat-popup-msg-error' : ''}`}>
-                  {msg.text}
+                  {msg.structured ? (
+                    <StructuredResponse data={msg.structured} />
+                  ) : (
+                    msg.text
+                  )}
                 </div>
                 {msg.role === 'user' && (
                   <div className="chat-popup-msg-avatar chat-popup-msg-avatar-user">U</div>
@@ -139,7 +356,7 @@ export default function ChatPopup() {
             {loading && (
               <div className="chat-popup-msg chat-popup-msg-bot">
                 <div className="chat-popup-msg-avatar">
-                  <HeartPulse size={12} />
+                  <HeartPulse size={13} />
                 </div>
                 <div className="chat-popup-typing">
                   <span /><span /><span />
@@ -153,7 +370,7 @@ export default function ChatPopup() {
           <div className="chat-popup-input">
             <input
               type="text"
-              placeholder="Ask about patient data..."
+              placeholder="Describe your symptoms..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}

@@ -16,7 +16,15 @@ async def sign_up(request: SignUpRequest):
     """Register a new user account."""
     try:
         service = AuthService()
-        result = await service.sign_up(request.email, request.password, request.full_name)
+        extra_profile = {
+            k: v for k, v in {
+                "phone": request.phone,
+                "date_of_birth": request.date_of_birth,
+                "gender": request.gender,
+                "blood_group": request.blood_group,
+            }.items() if v
+        }
+        result = await service.sign_up(request.email, request.password, request.full_name, extra_profile)
         token = result.get("access_token")
         return AuthResponse(
             access_token=token,

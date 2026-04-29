@@ -63,8 +63,8 @@ const del = (path) => request(path, { method: 'DELETE' });
 
 export const authAPI = {
   login: (email, password) => post('/api/auth/login', { email, password }),
-  signup: (email, password, full_name) =>
-    post('/api/auth/signup', { email, password, full_name }),
+  signup: (email, password, full_name, extraProfile = {}) =>
+    post('/api/auth/signup', { email, password, full_name, ...extraProfile }),
   logout: () => post('/api/auth/logout'),
   resetPassword: (email) => post('/api/auth/reset-password', { email }),
 };
@@ -86,8 +86,13 @@ export const chatAPI = {
       symptoms,
       additional_context: additionalContext,
     }),
-  conversation: (message, sessionId) =>
-    post('/api/chat/conversation', { message, session_id: sessionId }),
+  conversation: (message, sessionId, latitude, longitude) =>
+    post('/api/chat/conversation', {
+      message,
+      session_id: sessionId,
+      latitude: latitude || null,
+      longitude: longitude || null,
+    }),
   getHistory: (limit = 20) => get(`/api/chat/history?limit=${limit}`),
 };
 

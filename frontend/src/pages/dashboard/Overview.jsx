@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { appointmentAPI } from '../../services/api';
 import {
   CalendarCheck, ChevronRight, Clock, MapPin,
-  User, Plus, AlertCircle, History,
+  User, Plus, History,
 } from 'lucide-react';
 
 export default function Overview() {
@@ -111,108 +111,63 @@ export default function Overview() {
         </button>
       </section>
 
-      {/* ─── BOTTOM TWO-COLUMN ─── */}
-      <div className="ov-bottom-grid">
-        {/* HEALTH DETECTION */}
-        <section className="ov-section ov-detection-section">
-          <div className="ov-section-header">
-            <h2 className="ov-section-label">HEALTH DETECTION</h2>
-          </div>
+      {/* ─── HEALTH DETECTION ─── */}
+      <section className="ov-section">
+        <div className="ov-section-header">
+          <h2 className="ov-section-label">HEALTH DETECTION</h2>
+        </div>
 
-          <div className="ov-detection-cards">
-            {/* Skin Detection Card */}
-            <button className="ov-detect-card" onClick={() => navigate('/dashboard/detection', { state: { tab: 'skin' } })}>
-              <div className="ov-detect-icon ov-detect-skin">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 16v-4M12 8h.01"/>
-                </svg>
-              </div>
-              <div className="ov-detect-text">
-                <strong>Skin Analysis</strong>
-                <span>Upload image for AI detection</span>
-              </div>
-              <ChevronRight size={16} className="ov-detect-arrow" />
-            </button>
-
-            {/* PCOD/PCOS Card */}
-            <button className="ov-detect-card" onClick={() => navigate('/dashboard/detection', { state: { tab: 'pcod' } })}>
-              <div className="ov-detect-icon ov-detect-pcod">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 12l2 2 4-4"/>
-                  <path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3"/>
-                  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
-                  <path d="M21 5c0 1.66-4.03 3-9 3S3 6.66 3 5s4.03-3 9-3 9 1.34 9 3"/>
-                </svg>
-              </div>
-              <div className="ov-detect-text">
-                <strong>PCOS / PCOD Check</strong>
-                <span>Risk assessment questionnaire</span>
-              </div>
-              <ChevronRight size={16} className="ov-detect-arrow" />
-            </button>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="ov-detect-stats">
-            <div className="ov-detect-stat">
-              <span className="ov-detect-stat-val">MobileNetV2</span>
-              <span className="ov-detect-stat-lbl">Skin Model</span>
+        <div className="ov-detection-cards-row">
+          {/* Skin Detection Card */}
+          <button className="ov-detect-card" onClick={() => navigate('/dashboard/detection', { state: { tab: 'skin' } })}>
+            <div className="ov-detect-icon ov-detect-skin">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4M12 8h.01"/>
+              </svg>
             </div>
-            <div className="ov-detect-stat">
-              <span className="ov-detect-stat-val">7 Classes</span>
-              <span className="ov-detect-stat-lbl">Conditions</span>
+            <div className="ov-detect-text">
+              <strong>Skin Analysis</strong>
+              <span>Upload image for AI detection</span>
             </div>
-            <div className="ov-detect-stat">
-              <span className="ov-detect-stat-val">HAM10000</span>
-              <span className="ov-detect-stat-lbl">Dataset</span>
+            <ChevronRight size={16} className="ov-detect-arrow" />
+          </button>
+
+          {/* PCOD/PCOS Card */}
+          <button className="ov-detect-card" onClick={() => navigate('/dashboard/detection', { state: { tab: 'pcod' } })}>
+            <div className="ov-detect-icon ov-detect-pcod">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 12l2 2 4-4"/>
+                <path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3"/>
+                <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                <path d="M21 5c0 1.66-4.03 3-9 3S3 6.66 3 5s4.03-3 9-3 9 1.34 9 3"/>
+              </svg>
             </div>
-          </div>
-        </section>
-
-        {/* AI ASSISTANT PREVIEW */}
-        <section className="ov-section ov-ai-section">
-          <div className="ov-section-header">
-            <h2 className="ov-section-label">AI ASSISTANT</h2>
-            <span className="ov-ai-status">
-              <span className="ov-ai-dot" />
-              Llama 3.2
-            </span>
-          </div>
-
-          <div className="ov-ai-preview">
-            <div className="ov-ai-msg ov-ai-msg-bot">
-              <div className="ov-ai-avatar-bot">
-                <HeartPulseIcon />
-              </div>
-              <div className="ov-ai-bubble-bot">
-                Hello! I'm your CareSlot AI health assistant. I can help with symptom analysis,
-                health queries, and preliminary guidance. How can I help you today?
-              </div>
+            <div className="ov-detect-text">
+              <strong>PCOS / PCOD Check</strong>
+              <span>Risk assessment questionnaire</span>
             </div>
+            <ChevronRight size={16} className="ov-detect-arrow" />
+          </button>
+        </div>
 
-            <div className="ov-ai-hint">
-              <AlertCircle size={14} />
-              <span>Click the chat button below to start a conversation</span>
-            </div>
+        {/* Quick Stats */}
+        <div className="ov-detect-stats">
+          <div className="ov-detect-stat">
+            <span className="ov-detect-stat-val">MobileNetV2</span>
+            <span className="ov-detect-stat-lbl">Skin Model</span>
           </div>
-
-          <div className="ov-ai-features">
-            <span className="ov-ai-feature">💬 Symptom Analysis</span>
-            <span className="ov-ai-feature">🔬 Health Queries</span>
-            <span className="ov-ai-feature">💊 Medication Info</span>
+          <div className="ov-detect-stat">
+            <span className="ov-detect-stat-val">7 Classes</span>
+            <span className="ov-detect-stat-lbl">Conditions</span>
           </div>
-        </section>
-      </div>
+          <div className="ov-detect-stat">
+            <span className="ov-detect-stat-val">HAM10000</span>
+            <span className="ov-detect-stat-lbl">Dataset</span>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
-function HeartPulseIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-      <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
-    </svg>
-  );
-}
