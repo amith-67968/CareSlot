@@ -25,19 +25,15 @@ async function request(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  // Normalize: ensure paths ending with the route prefix get a trailing slash
-  // to avoid 307 redirects that strip the Authorization header
-  let normalizedPath = path;
-  if (!normalizedPath.includes('?') && !normalizedPath.match(/\/[^/]+\.[^/]+$/) && !normalizedPath.endsWith('/')) {
-    const segments = normalizedPath.split('/').filter(Boolean);
-    const lastSegment = segments[segments.length - 1];
-    // Add trailing slash if last segment is a route name (not an ID or has no dash/numbers)
-    if (lastSegment && !lastSegment.includes('-') && !/^\d+$/.test(lastSegment)) {
-      normalizedPath += '/';
+  let res = await fetch(`${API_BASE}${path}`, { ...options, headers, redirect: 'manual' });
+
+  // Handle 307/308 redirects manually to preserve Authorization header
+  if (res.status === 307 || res.status === 308) {
+    const location = res.headers.get('location');
+    if (location) {
+      res = await fetch(location, { ...options, headers, redirect: 'follow' });
     }
   }
-
-  const res = await fetch(`${API_BASE}${normalizedPath}`, { ...options, headers, redirect: 'follow' });
 
   if (res.status === 401 && !path.startsWith('/api/auth')) {
     localStorage.removeItem('careslot_auth');
@@ -76,8 +72,8 @@ export const authAPI = {
 /* ── Profile ─────────────────────────────────────────────────────── */
 
 export const profileAPI = {
-  get: () => get('/api/profile/'),
-  update: (data) => put('/api/profile/', data),
+  get: () => get('/api/profile'),
+  update: (data) => put('/api/profile', data),
   getMedicalHistory: () => get('/api/profile/medical-history'),
   addMedicalHistory: (data) => post('/api/profile/medical-history', data),
 };
