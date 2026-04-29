@@ -4,7 +4,10 @@ Endpoints for skin disease detection via image upload.
 """
 
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
-from app.models.skin import SkinSymptomsInput, SkinAnalysisResponse, SkinHistoryResponse
+from app.models.skin import (
+    SkinSymptomsInput, SkinAnalysisResponse,
+    SkinHistoryResponse, SkinPredictionDetailResponse,
+)
 from app.services.skin_service import SkinService
 from app.dependencies import get_current_user
 import json
@@ -53,3 +56,13 @@ async def get_skin_history(user: dict = Depends(get_current_user)):
     service = SkinService()
     result = await service.get_history(user["user_id"])
     return SkinHistoryResponse(**result)
+
+
+@router.get("/predictions/{prediction_id}", response_model=SkinPredictionDetailResponse)
+async def get_prediction(prediction_id: str, user: dict = Depends(get_current_user)):
+    """Get a single skin analysis report for reopening."""
+    service = SkinService()
+    result = await service.get_prediction(user["user_id"], prediction_id)
+    if not result:
+        raise HTTPException(404, "Prediction not found")
+    return SkinPredictionDetailResponse(**result)
