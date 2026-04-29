@@ -6,6 +6,7 @@ Verifies Supabase JWT tokens and extracts user information.
 from fastapi import Request, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
+from jose.exceptions import JOSEError
 from app.config import get_settings
 from typing import Optional
 import httpx
@@ -24,31 +25,43 @@ async def verify_supabase_token(
     token = credentials.credentials
     settings = get_settings()
 
-    try:
-        # If JWT secret is configured, verify locally
-        if settings.SUPABASE_JWT_SECRET:
-            payload = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=["HS256"],
-                audience="authenticated",
-            )
-        else:
-            # Fallback: verify via Supabase API
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{settings.SUPABASE_URL}/auth/v1/user",
-                    headers={
-                        "Authorization": f"Bearer {token}",
-                        "apikey": settings.SUPABASE_ANON_KEY,
-                    },
+    # Try local JWT decode first (supports HS256 and ES256)
+    if settings.SUPABASE_JWT_SECRET:
+        for alg in ["HS256", "ES256"]:
+            try:
+                payload = jwt.decode(
+                    token,
+                    settings.SUPABASE_JWT_SECRET,
+                    algorithms=[alg],
+                    audience="authenticated",
                 )
-                if response.status_code != 200:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Invalid or expired token",
-                    )
-                payload = response.json()
+                user_id = payload.get("sub") or payload.get("id")
+                if user_id:
+                    return {
+                        "user_id": user_id,
+                        "email": payload.get("email"),
+                        "role": payload.get("role", "authenticated"),
+                        "token": token,
+                    }
+            except (JWTError, JOSEError):
+                continue
+
+    # Fallback: verify via Supabase API
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.SUPABASE_URL}/auth/v1/user",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "apikey": settings.SUPABASE_ANON_KEY,
+                },
+            )
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid or expired token",
+                )
+            payload = response.json()
 
         user_id = payload.get("sub") or payload.get("id")
         if not user_id:
@@ -64,7 +77,9 @@ async def verify_supabase_token(
             "token": token,
         }
 
-    except JWTError as e:
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Token verification failed: {str(e)}",

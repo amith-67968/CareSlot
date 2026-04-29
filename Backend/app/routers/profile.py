@@ -15,14 +15,14 @@ from typing import List
 router = APIRouter(prefix="/api/profile", tags=["User Profile"])
 
 
-@router.get("/", response_model=UserProfileResponse)
+@router.get("/")
 async def get_profile(user: dict = Depends(get_current_user)):
     """Get the current user's profile."""
     service = AuthService()
     profile = await service.get_profile(user["user_id"])
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    return profile
+    return {"profile": profile}
 
 
 @router.put("/", response_model=UserProfileResponse)

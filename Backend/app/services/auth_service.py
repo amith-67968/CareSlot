@@ -24,12 +24,14 @@ class AuthService:
             user = auth_response.user
 
             if user:
-                # Create user profile
-                self.supabase.insert("user_profiles", {
-                    "user_id": user.id,
-                    "full_name": full_name,
-                    "email": email,
-                })
+                # Create user profile (upsert to handle re-signups)
+                existing = self.supabase.select_one("user_profiles", filters={"user_id": user.id})
+                if not existing:
+                    self.supabase.insert("user_profiles", {
+                        "user_id": user.id,
+                        "full_name": full_name,
+                        "email": email,
+                    })
 
             return {
                 "user_id": user.id if user else None,
@@ -38,7 +40,10 @@ class AuthService:
                 "refresh_token": auth_response.session.refresh_token if auth_response.session else None,
             }
         except Exception as e:
-            logger.error(f"Sign up error: {e}")
+            error_msg = str(e)
+            logger.error(f"Sign up error: {error_msg}")
+            if "already" in error_msg.lower() or "duplicate" in error_msg.lower() or "23505" in error_msg:
+                raise ValueError("An account with this email already exists. Please log in instead.")
             raise
 
     async def sign_in(self, email: str, password: str) -> Dict[str, Any]:

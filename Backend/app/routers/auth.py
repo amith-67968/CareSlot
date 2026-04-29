@@ -17,11 +17,13 @@ async def sign_up(request: SignUpRequest):
     try:
         service = AuthService()
         result = await service.sign_up(request.email, request.password, request.full_name)
+        token = result.get("access_token")
         return AuthResponse(
-            access_token=result.get("access_token", ""),
+            access_token=token,
             refresh_token=result.get("refresh_token"),
-            user_id=result.get("user_id", ""),
+            user_id=result.get("user_id"),
             email=request.email,
+            message="Check your email to confirm your account" if not token else "Account created successfully",
         )
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

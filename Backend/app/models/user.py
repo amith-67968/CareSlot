@@ -33,11 +33,12 @@ class PasswordResetRequest(BaseModel):
     email: EmailStr
 
 class AuthResponse(BaseModel):
-    access_token: str
+    access_token: Optional[str] = None
     refresh_token: Optional[str] = None
     token_type: str = "bearer"
-    user_id: str
+    user_id: Optional[str] = None
     email: str
+    message: Optional[str] = None
 
 class MessageResponse(BaseModel):
     message: str
