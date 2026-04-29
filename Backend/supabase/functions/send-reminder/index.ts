@@ -1,3 +1,4 @@
+// @ts-nocheck
 // CareSlot — Supabase Edge Function: Send Reminder
 // Processes pending reminders and creates notifications.
 // Deploy: supabase functions deploy send-reminder
@@ -96,7 +97,8 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({ message: "Reminders processed", processed }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
     console.error("Edge function error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),

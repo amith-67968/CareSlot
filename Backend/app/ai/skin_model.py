@@ -43,9 +43,9 @@ def load_skin_model():
         return _model
 
     import tensorflow as tf
-    from tensorflow.keras.applications import MobileNetV2
-    from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
-    from tensorflow.keras.models import Model
+    from tensorflow.keras.applications import MobileNetV2  # type: ignore[import-untyped]
+    from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout  # type: ignore[import-untyped]
+    from tensorflow.keras.models import Model  # type: ignore[import-untyped]
 
     settings = get_settings()
     model_path = settings.SKIN_MODEL_PATH
