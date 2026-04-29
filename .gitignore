@@ -5,7 +5,6 @@ __pycache__/
 *.so
 *.egg
 *.egg-info/
-dist/
 build/
 eggs/
 *.manifest
@@ -18,20 +17,38 @@ venv/
 .venv/
 env/
 .env
+.env.*
+*.local
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Dependencies
+node_modules/
 
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
+# Frontend build/cache output
+frontend/.vite/
+frontend/dist/
+frontend/dist-ssr/
 
-# ML Models (large binaries)
+# Nested Git backup
+frontend/.git-backup/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing and coverage
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage/
+.nyc_output/
+
+# ML models and large binaries
 ml_models/*.h5
 ml_models/*.pkl
 ml_models/*.pt
@@ -41,30 +58,34 @@ ml_models/*.tflite
 ml_models/*.bin
 !ml_models/.gitkeep
 
-# Datasets (large files — keep READMEs only)
+# Datasets
 Backend/data/ham10000/HAM10000_images_part_1/
 Backend/data/ham10000/HAM10000_images_part_2/
 Backend/data/ham10000/*.csv
 !Backend/data/ham10000/README.md
 
-# Vector DB (generated at runtime)
+# Generated runtime data
 chroma_db/
-
-# Logs
-*.log
-
-# Testing
-.pytest_cache/
-htmlcov/
-.coverage
-.coverage.*
-
-# Supabase
 Backend/supabase/.temp/
 
-# Node (edge functions)
-node_modules/
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
 
-# Misc
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
 *.bak
 *.tmp
