@@ -1,168 +1,218 @@
 /**
- * CareSlot — Dashboard Overview
- * Main dashboard page with health summary, quick actions, and activity feed.
+ * CareSlot — Dashboard Overview (Redesigned)
+ * Clean clinical dashboard with appointments, detection, and AI chat.
  */
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { appointmentAPI, notificationAPI } from '../../services/api';
+import { appointmentAPI } from '../../services/api';
 import {
-  MessageCircle, ScanEye, ClipboardList, CalendarCheck,
-  Activity, TrendingUp, Heart, Clock,
-  ArrowRight, Bell, ChevronRight,
+  CalendarCheck, ChevronRight, Clock, MapPin,
+  User, Plus, AlertCircle, History,
 } from 'lucide-react';
-
-const QUICK_ACTIONS = [
-  {
-    icon: MessageCircle, label: 'AI Chat', desc: 'Symptom analysis',
-    to: '/dashboard/chat', color: '#3b82f6',
-  },
-  {
-    icon: ScanEye, label: 'Skin Scan', desc: 'Image analysis',
-    to: '/dashboard/skin', color: '#8b5cf6',
-  },
-  {
-    icon: ClipboardList, label: 'PCOD Check', desc: 'Risk assessment',
-    to: '/dashboard/pcod', color: '#ec4899',
-  },
-  {
-    icon: CalendarCheck, label: 'Book Appt', desc: 'Schedule visit',
-    to: '/dashboard/appointments', color: '#14b8a6',
-  },
-];
-
-const STATS = [
-  { icon: Heart, label: 'Health Score', value: '86%', trend: '+2%', color: '#ef4444' },
-  { icon: Activity, label: 'Consultations', value: '12', trend: '+3', color: '#3b82f6' },
-  { icon: TrendingUp, label: 'Assessments', value: '5', trend: '+1', color: '#8b5cf6' },
-  { icon: Clock, label: 'Reminders', value: '3', trend: 'Active', color: '#f59e0b' },
-];
 
 export default function Overview() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
-  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    appointmentAPI.list('scheduled').then((d) => setAppointments(d.appointments?.slice(0, 3) || [])).catch(() => {});
-    notificationAPI.list(5).then((d) => setNotifications(d.notifications?.slice(0, 4) || [])).catch(() => {});
+    appointmentAPI.list()
+      .then((d) => setAppointments(d.appointments || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const userName = user?.full_name || user?.email?.split('@')[0] || 'there';
+
+  // Get upcoming appointments (scheduled ones, sorted by date)
+  const upcoming = appointments
+    .filter(a => a.status === 'scheduled')
+    .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
+    .slice(0, 5);
+
+  const nextAppt = upcoming[0];
 
   return (
-    <div className="dash-overview">
-      {/* Welcome */}
-      <div className="dash-welcome">
-        <div>
-          <h1 className="dash-welcome-title">{greeting} 👋</h1>
-          <p className="dash-welcome-sub">Here's your health snapshot for today.</p>
-        </div>
-        <button className="dash-welcome-btn" onClick={() => navigate('/dashboard/chat')}>
-          <MessageCircle size={16} />
-          Start AI Chat
-        </button>
+    <div className="ov-page">
+      {/* Welcome Header */}
+      <div className="ov-header">
+        <h1 className="ov-title">Overview</h1>
+        <p className="ov-subtitle">
+          {greeting}, <strong>{userName}</strong>. Here is your daily summary.
+        </p>
       </div>
 
-      {/* Stat cards */}
-      <div className="dash-stats-grid">
-        {STATS.map((s) => (
-          <div key={s.label} className="dash-stat-card">
-            <div className="dash-stat-icon" style={{ background: `${s.color}18`, color: s.color }}>
-              <s.icon size={20} />
-            </div>
-            <div className="dash-stat-info">
-              <span className="dash-stat-value">{s.value}</span>
-              <span className="dash-stat-label">{s.label}</span>
-            </div>
-            <span className="dash-stat-trend" style={{ color: s.color }}>{s.trend}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <h2 className="dash-section-title">Quick Actions</h2>
-      <div className="dash-quick-grid">
-        {QUICK_ACTIONS.map((a) => (
-          <button key={a.label} className="dash-quick-card" onClick={() => navigate(a.to)}>
-            <div className="dash-quick-icon" style={{ background: `${a.color}14`, color: a.color }}>
-              <a.icon size={22} />
-            </div>
-            <div className="dash-quick-text">
-              <span className="dash-quick-label">{a.label}</span>
-              <span className="dash-quick-desc">{a.desc}</span>
-            </div>
-            <ArrowRight size={16} className="dash-quick-arrow" />
+      {/* ─── APPOINTMENTS SECTION ─── */}
+      <section className="ov-section">
+        <div className="ov-section-header">
+          <h2 className="ov-section-label">YOUR APPOINTMENTS</h2>
+          <button className="ov-history-link" onClick={() => navigate('/dashboard/appointments')}>
+            <History size={14} />
+            HISTORY
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Two-column: Appointments + Activity */}
-      <div className="dash-bottom-grid">
-        <div className="dash-panel">
-          <div className="dash-panel-header">
-            <h3>Upcoming Appointments</h3>
-            <button onClick={() => navigate('/dashboard/appointments')}>
-              View All <ChevronRight size={14} />
-            </button>
+        {/* Next appointment alert */}
+        {nextAppt && (
+          <div className="ov-appt-alert">
+            <CalendarCheck size={18} />
+            <span>
+              Next appointment: <strong>{nextAppt.doctor_name}</strong> — {nextAppt.doctor_specialty || 'General'}
+              {' · '}{new Date(nextAppt.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {' at '}{nextAppt.appointment_time}
+            </span>
           </div>
-          {appointments.length === 0 ? (
-            <div className="dash-panel-empty">
-              <CalendarCheck size={32} strokeWidth={1.2} />
+        )}
+
+        {/* Appointment list */}
+        <div className="ov-appt-list">
+          {loading ? (
+            <div className="ov-loading">Loading appointments...</div>
+          ) : upcoming.length === 0 ? (
+            <div className="ov-empty">
+              <CalendarCheck size={28} strokeWidth={1.3} />
               <p>No upcoming appointments</p>
-              <button className="dash-panel-empty-btn" onClick={() => navigate('/dashboard/appointments')}>
-                Book Now
-              </button>
             </div>
           ) : (
-            <div className="dash-appt-list">
-              {appointments.map((a) => (
-                <div key={a.id} className="dash-appt-item">
-                  <div className="dash-appt-date">
-                    <span>{new Date(a.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    <small>{a.appointment_time}</small>
+            upcoming.map((a) => {
+              const dt = new Date(a.appointment_date);
+              const timeStr = a.appointment_time || '';
+              const [h, m] = timeStr.split(':');
+              const hour12 = h ? (parseInt(h) % 12 || 12) : '';
+              const ampm = h ? (parseInt(h) >= 12 ? 'PM' : 'AM') : '';
+
+              return (
+                <div key={a.id} className="ov-appt-row">
+                  <div className="ov-appt-time">
+                    <span className="ov-appt-hour">{hour12}:{m || '00'}</span>
+                    <span className="ov-appt-ampm">{ampm}</span>
                   </div>
-                  <div className="dash-appt-info">
+                  <div className="ov-appt-divider" />
+                  <div className="ov-appt-info">
                     <strong>{a.doctor_name}</strong>
-                    <span>{a.hospital_name}</span>
+                    <span>{a.doctor_specialty || 'General Consultation'}</span>
                   </div>
-                  <span className={`dash-appt-badge dash-appt-${a.status}`}>{a.status}</span>
+                  <ChevronRight size={16} className="ov-appt-arrow" />
                 </div>
-              ))}
-            </div>
+              );
+            })
           )}
         </div>
 
-        <div className="dash-panel">
-          <div className="dash-panel-header">
-            <h3>Recent Notifications</h3>
-            <button onClick={() => navigate('/dashboard/notifications')}>
-              View All <ChevronRight size={14} />
+        {/* Book Appointment button */}
+        <button className="ov-book-btn" onClick={() => navigate('/dashboard/appointments')}>
+          <Plus size={16} />
+          Book Appointment
+        </button>
+      </section>
+
+      {/* ─── BOTTOM TWO-COLUMN ─── */}
+      <div className="ov-bottom-grid">
+        {/* HEALTH DETECTION */}
+        <section className="ov-section ov-detection-section">
+          <div className="ov-section-header">
+            <h2 className="ov-section-label">HEALTH DETECTION</h2>
+          </div>
+
+          <div className="ov-detection-cards">
+            {/* Skin Detection Card */}
+            <button className="ov-detect-card" onClick={() => navigate('/dashboard/detection', { state: { tab: 'skin' } })}>
+              <div className="ov-detect-icon ov-detect-skin">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+              </div>
+              <div className="ov-detect-text">
+                <strong>Skin Analysis</strong>
+                <span>Upload image for AI detection</span>
+              </div>
+              <ChevronRight size={16} className="ov-detect-arrow" />
+            </button>
+
+            {/* PCOD/PCOS Card */}
+            <button className="ov-detect-card" onClick={() => navigate('/dashboard/detection', { state: { tab: 'pcod' } })}>
+              <div className="ov-detect-icon ov-detect-pcod">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12l2 2 4-4"/>
+                  <path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3"/>
+                  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                  <path d="M21 5c0 1.66-4.03 3-9 3S3 6.66 3 5s4.03-3 9-3 9 1.34 9 3"/>
+                </svg>
+              </div>
+              <div className="ov-detect-text">
+                <strong>PCOS / PCOD Check</strong>
+                <span>Risk assessment questionnaire</span>
+              </div>
+              <ChevronRight size={16} className="ov-detect-arrow" />
             </button>
           </div>
-          {notifications.length === 0 ? (
-            <div className="dash-panel-empty">
-              <Bell size={32} strokeWidth={1.2} />
-              <p>You're all caught up!</p>
+
+          {/* Quick Stats */}
+          <div className="ov-detect-stats">
+            <div className="ov-detect-stat">
+              <span className="ov-detect-stat-val">MobileNetV2</span>
+              <span className="ov-detect-stat-lbl">Skin Model</span>
             </div>
-          ) : (
-            <div className="dash-notif-list">
-              {notifications.map((n) => (
-                <div key={n.id} className={`dash-notif-item ${n.is_read ? '' : 'dash-notif-unread'}`}>
-                  <Bell size={16} />
-                  <div>
-                    <strong>{n.title}</strong>
-                    <p>{n.body}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="ov-detect-stat">
+              <span className="ov-detect-stat-val">7 Classes</span>
+              <span className="ov-detect-stat-lbl">Conditions</span>
             </div>
-          )}
-        </div>
+            <div className="ov-detect-stat">
+              <span className="ov-detect-stat-val">HAM10000</span>
+              <span className="ov-detect-stat-lbl">Dataset</span>
+            </div>
+          </div>
+        </section>
+
+        {/* AI ASSISTANT PREVIEW */}
+        <section className="ov-section ov-ai-section">
+          <div className="ov-section-header">
+            <h2 className="ov-section-label">AI ASSISTANT</h2>
+            <span className="ov-ai-status">
+              <span className="ov-ai-dot" />
+              Llama 3.2
+            </span>
+          </div>
+
+          <div className="ov-ai-preview">
+            <div className="ov-ai-msg ov-ai-msg-bot">
+              <div className="ov-ai-avatar-bot">
+                <HeartPulseIcon />
+              </div>
+              <div className="ov-ai-bubble-bot">
+                Hello! I'm your CareSlot AI health assistant. I can help with symptom analysis,
+                health queries, and preliminary guidance. How can I help you today?
+              </div>
+            </div>
+
+            <div className="ov-ai-hint">
+              <AlertCircle size={14} />
+              <span>Click the chat button below to start a conversation</span>
+            </div>
+          </div>
+
+          <div className="ov-ai-features">
+            <span className="ov-ai-feature">💬 Symptom Analysis</span>
+            <span className="ov-ai-feature">🔬 Health Queries</span>
+            <span className="ov-ai-feature">💊 Medication Info</span>
+          </div>
+        </section>
       </div>
     </div>
+  );
+}
+
+function HeartPulseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+      <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
+    </svg>
   );
 }

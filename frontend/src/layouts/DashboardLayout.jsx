@@ -1,30 +1,29 @@
 /**
- * CareSlot — Dashboard Layout
- * Sidebar + Topbar + Content Outlet
+ * CareSlot — Dashboard Layout (Redesigned)
+ * Clean clinical sidebar + topbar + content
  */
 
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ProfilePopup from '../components/ProfilePopup';
+import ChatPopup from '../components/ChatPopup';
 import {
-  LayoutDashboard, MessageCircle, ScanEye, ClipboardList,
-  CalendarCheck, MapPin, UserCircle, Bell, LogOut,
-  Menu, X, HeartPulse, ChevronRight,
+  LayoutDashboard, ScanEye, CalendarCheck, MapPin,
+  LogOut, Menu, X, HeartPulse, ChevronRight,
+  UserCircle, Settings, Search,
 } from 'lucide-react';
 
 const NAV = [
-  { to: '/dashboard',            icon: LayoutDashboard, label: 'Overview',       end: true },
-  { to: '/dashboard/chat',       icon: MessageCircle,   label: 'AI Chat' },
-  { to: '/dashboard/skin',       icon: ScanEye,         label: 'Skin Analysis' },
-  { to: '/dashboard/pcod',       icon: ClipboardList,   label: 'PCOD Assessment' },
-  { to: '/dashboard/appointments', icon: CalendarCheck,  label: 'Appointments' },
-  { to: '/dashboard/doctors',    icon: MapPin,           label: 'Find Doctors' },
-  { to: '/dashboard/notifications', icon: Bell,          label: 'Notifications' },
-  { to: '/dashboard/profile',    icon: UserCircle,       label: 'Profile' },
+  { to: '/dashboard',              icon: LayoutDashboard, label: 'Dashboard',        end: true },
+  { to: '/dashboard/detection',    icon: ScanEye,         label: 'Disease Detection' },
+  { to: '/dashboard/appointments', icon: CalendarCheck,   label: 'Appointments' },
+  { to: '/dashboard/hospitals',    icon: MapPin,           label: 'Hospital Site' },
 ];
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -33,21 +32,24 @@ export default function DashboardLayout() {
     navigate('/auth');
   };
 
+  const initial = (user?.email || 'U').charAt(0).toUpperCase();
+  const userName = user?.full_name || user?.email?.split('@')[0] || 'User';
+
   return (
     <div className="dash-layout">
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="dash-overlay" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
       <aside className={`dash-sidebar ${sidebarOpen ? 'dash-sidebar-open' : ''}`}>
+        {/* Brand */}
         <div className="dash-sidebar-top">
           <a href="/" className="dash-brand">
             <span className="dash-brand-icon">
               <HeartPulse size={20} strokeWidth={2.4} />
             </span>
-            <span className="dash-brand-text">CareSlot</span>
+            <span className="dash-brand-text">CareSlot AI</span>
           </a>
           <button
             className="dash-sidebar-close"
@@ -58,6 +60,21 @@ export default function DashboardLayout() {
           </button>
         </div>
 
+        {/* User card */}
+        <div className="dash-user-card" onClick={() => setProfileOpen(true)} role="button" tabIndex={0}>
+          <div className="dash-user-avatar">{initial}</div>
+          <div className="dash-user-info">
+            <span className="dash-user-name">{userName}</span>
+            <span className="dash-user-role">Patient</span>
+          </div>
+        </div>
+
+        {/* New Analysis button */}
+        <button className="dash-new-scan-btn" onClick={() => navigate('/dashboard/detection')}>
+          + New Analysis
+        </button>
+
+        {/* Navigation */}
         <nav className="dash-nav">
           {NAV.map((item) => (
             <NavLink
@@ -76,15 +93,20 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
+        {/* Bottom actions */}
         <div className="dash-sidebar-footer">
-          <button className="dash-logout-btn" onClick={handleLogout}>
+          <button className="dash-footer-btn" onClick={() => setProfileOpen(true)}>
+            <UserCircle size={18} />
+            <span>Profile</span>
+          </button>
+          <button className="dash-footer-btn dash-logout-btn" onClick={handleLogout}>
             <LogOut size={18} />
-            <span>Log Out</span>
+            <span>Logout</span>
           </button>
         </div>
       </aside>
 
-      {/* Main area */}
+      {/* Main */}
       <div className="dash-main">
         {/* Topbar */}
         <header className="dash-topbar">
@@ -96,22 +118,25 @@ export default function DashboardLayout() {
             <Menu size={22} />
           </button>
 
+          <div className="dash-search-bar">
+            <Search size={16} />
+            <input type="text" placeholder="Search patient ID or condition..." />
+          </div>
+
           <div className="dash-topbar-right">
             <button
-              className="dash-notif-btn"
-              onClick={() => navigate('/dashboard/notifications')}
-              aria-label="Notifications"
+              className="dash-settings-btn"
+              aria-label="Settings"
             >
-              <Bell size={18} />
-              <span className="dash-notif-dot" />
+              <Settings size={18} />
             </button>
             <div
               className="dash-avatar"
-              onClick={() => navigate('/dashboard/profile')}
+              onClick={() => setProfileOpen(true)}
               role="button"
               tabIndex={0}
             >
-              {(user?.email || 'U').charAt(0).toUpperCase()}
+              {initial}
             </div>
           </div>
         </header>
@@ -121,6 +146,14 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating Chat */}
+      <ChatPopup />
+
+      {/* Profile Popup */}
+      {profileOpen && (
+        <ProfilePopup onClose={() => setProfileOpen(false)} onLogout={handleLogout} />
+      )}
     </div>
   );
 }

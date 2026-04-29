@@ -39,6 +39,12 @@ export function AuthProvider({ children }) {
 
   const signup = async (email, password, fullName) => {
     const data = await authAPI.signup(email, password, fullName);
+
+    // If Supabase requires email confirmation, no token is returned
+    if (!data.access_token) {
+      return { needsConfirmation: true, message: data.message || 'Check your email to confirm your account', email };
+    }
+
     const userData = {
       access_token: data.access_token,
       refresh_token: data.refresh_token,

@@ -5,13 +5,9 @@ import Landing from './pages/Landing';
 import AuthPage from './pages/AuthPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import Overview from './pages/dashboard/Overview';
-import Chat from './pages/dashboard/Chat';
-import SkinAnalysis from './pages/dashboard/SkinAnalysis';
-import PCODAssessment from './pages/dashboard/PCODAssessment';
+import Detection from './pages/dashboard/Detection';
 import Appointments from './pages/dashboard/Appointments';
 import Doctors from './pages/dashboard/Doctors';
-import Profile from './pages/dashboard/Profile';
-import Notifications from './pages/dashboard/Notifications';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -33,13 +29,9 @@ function App() {
         }
       >
         <Route index element={<Overview />} />
-        <Route path="chat" element={<Chat />} />
-        <Route path="skin" element={<SkinAnalysis />} />
-        <Route path="pcod" element={<PCODAssessment />} />
+        <Route path="detection" element={<Detection />} />
         <Route path="appointments" element={<Appointments />} />
-        <Route path="doctors" element={<Doctors />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="notifications" element={<Notifications />} />
+        <Route path="hospitals" element={<Doctors />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

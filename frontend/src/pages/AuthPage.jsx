@@ -22,22 +22,31 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('');
   const [remember, setRemember] = useState(false);
 
+  const [success, setSuccess] = useState('');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
       if (tab === 'login') {
         await login(email, password);
+        navigate('/dashboard');
       } else {
         if (password.length < 8) {
           setError('Password must be at least 8 characters');
           setLoading(false);
           return;
         }
-        await signup(email, password, fullName);
+        const result = await signup(email, password, fullName);
+        if (result.needsConfirmation) {
+          setSuccess(result.message);
+          setTab('login');
+        } else {
+          navigate('/dashboard');
+        }
       }
-      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Something went wrong');
     } finally {
@@ -101,6 +110,7 @@ export default function AuthPage() {
 
           {/* Error banner */}
           {error && <div className="auth-error">{error}</div>}
+          {success && <div className="auth-success">{success}</div>}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="auth-form">
