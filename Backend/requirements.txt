@@ -34,6 +34,8 @@ transformers>=4.47.1
 torch>=2.5.1
 sentencepiece>=0.2.0
 accelerate>=1.2.1
+pandas>=2.0.0
+scikit-learn>=1.0.0
 
 # --- Embeddings ---
 sentence-transformers>=3.3.1

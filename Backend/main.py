@@ -22,34 +22,34 @@ logger = logging.getLogger("careslot")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
-    logger.info("🚀 Starting CareSlot Backend...")
+    logger.info("Starting CareSlot Backend...")
 
     # Initialize ChromaDB knowledge base
     try:
         from app.ai.rag import get_vector_store, get_collection_stats
         store = get_vector_store()
         stats = get_collection_stats()
-        logger.info(f"📚 ChromaDB ready: {stats['total_documents']} documents")
+        logger.info(f"ChromaDB ready: {stats['total_documents']} documents")
 
         if stats["total_documents"] == 0:
-            logger.info("📥 Seeding knowledge base...")
+            logger.info("Seeding knowledge base...")
             from app.ai.rag import ingest_knowledge
             count = ingest_knowledge()
-            logger.info(f"✅ Ingested {count} documents into ChromaDB")
+            logger.info(f"Ingested {count} documents into ChromaDB")
     except Exception as e:
-        logger.warning(f"⚠️ ChromaDB init warning: {e}")
+        logger.warning(f"ChromaDB init warning: {e}")
 
     # Pre-load embedding model
     try:
         from app.ai.embeddings import get_embeddings
         get_embeddings()
-        logger.info("🧠 Embedding model loaded")
+        logger.info("Embedding model loaded")
     except Exception as e:
-        logger.warning(f"⚠️ Embedding model warning: {e}")
+        logger.warning(f"Embedding model warning: {e}")
 
-    logger.info("✅ CareSlot Backend ready!")
+    logger.info("CareSlot Backend ready!")
     yield
-    logger.info("👋 Shutting down CareSlot Backend...")
+    logger.info("Shutting down CareSlot Backend...")
 
 
 # Create FastAPI app

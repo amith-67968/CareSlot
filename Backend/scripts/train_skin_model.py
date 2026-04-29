@@ -1,18 +1,18 @@
 """
-CareSlot — MobileNetV2 Fine-Tuning on HAM10000
+CareSlot -- MobileNetV2 Fine-Tuning on HAM10000
 =================================================
 
 This script fine-tunes a MobileNetV2 model on the HAM10000 skin lesion dataset
 for 7-class skin disease classification.
 
 HAM10000 Classes:
-    akiec  — Actinic keratoses / Bowen's disease
-    bcc    — Basal cell carcinoma
-    bkl    — Benign keratosis
-    df     — Dermatofibroma
-    mel    — Melanoma
-    nv     — Melanocytic nevi (moles)
-    vasc   — Vascular lesions
+    akiec  - Actinic keratoses / Bowen's disease
+    bcc    - Basal cell carcinoma
+    bkl    - Benign keratosis
+    df     - Dermatofibroma
+    mel    - Melanoma
+    nv     - Melanocytic nevi (moles)
+    vasc   - Vascular lesions
 
 Prerequisites:
     1. Download HAM10000 dataset from:
@@ -38,7 +38,7 @@ import pandas as pd
 from pathlib import Path
 from collections import Counter
 
-# ── Configuration ────────────────────────────────────────────────────────────
+# -- Configuration ---------------------------------------------------------------
 
 DATA_DIR = Path("data/ham10000")
 METADATA_FILE = DATA_DIR / "HAM10000_metadata.csv"
@@ -46,7 +46,7 @@ IMAGE_DIRS = [
     DATA_DIR / "HAM10000_images_part_1",
     DATA_DIR / "HAM10000_images_part_2",
 ]
-OUTPUT_MODEL_PATH = Path("ml_models/skin_mobilenetv2.h5")
+OUTPUT_MODEL_PATH = Path("ml_models/mobilenetv2_ham10000.h5")
 
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
@@ -63,38 +63,38 @@ NUM_CLASSES = len(CLASSES)
 def check_prerequisites():
     """Verify dataset files exist."""
     if not METADATA_FILE.exists():
-        print("❌ HAM10000_metadata.csv not found!")
+        print("[ERROR] HAM10000_metadata.csv not found!")
         print(f"   Expected at: {METADATA_FILE.resolve()}")
         print()
-        print("📥 Download the HAM10000 dataset:")
+        print("Download the HAM10000 dataset:")
         print("   https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000")
         print()
-        print("📁 Expected folder structure:")
+        print("Expected folder structure:")
         print("   Backend/data/ham10000/")
-        print("   ├── HAM10000_metadata.csv")
-        print("   ├── HAM10000_images_part_1/  (folder with .jpg images)")
-        print("   └── HAM10000_images_part_2/  (folder with .jpg images)")
+        print("   |-- HAM10000_metadata.csv")
+        print("   |-- HAM10000_images_part_1/  (folder with .jpg images)")
+        print("   +-- HAM10000_images_part_2/  (folder with .jpg images)")
         sys.exit(1)
 
     found_dirs = [d for d in IMAGE_DIRS if d.exists()]
     if not found_dirs:
-        print("❌ No image directories found!")
+        print("[ERROR] No image directories found!")
         print("   Expected HAM10000_images_part_1/ and/or HAM10000_images_part_2/")
         sys.exit(1)
 
-    print(f"✅ Metadata file: {METADATA_FILE}")
+    print(f"[OK] Metadata file: {METADATA_FILE}")
     for d in found_dirs:
         count = len(list(d.glob("*.jpg")))
-        print(f"✅ Image dir: {d.name} ({count} images)")
+        print(f"[OK] Image dir: {d.name} ({count} images)")
 
 
 def load_metadata():
     """Load and prepare the HAM10000 metadata."""
     df = pd.read_csv(METADATA_FILE)
-    print(f"\n📊 Total samples in metadata: {len(df)}")
+    print(f"\nTotal samples in metadata: {len(df)}")
     print(f"   Columns: {list(df.columns)}")
 
-    # Build image_id → file path mapping
+    # Build image_id -> file path mapping
     image_paths = {}
     for img_dir in IMAGE_DIRS:
         if img_dir.exists():
@@ -112,10 +112,10 @@ def load_metadata():
     df["label_idx"] = df["label_idx"].astype(int)
 
     # Show class distribution
-    print("\n📊 Class Distribution:")
+    print("\nClass Distribution:")
     for cls in CLASSES:
         count = len(df[df["dx"] == cls])
-        print(f"   {cls:6s} → {count:5d} samples")
+        print(f"   {cls:6s} => {count:5d} samples")
 
     return df
 
@@ -180,9 +180,9 @@ def compute_class_weights(df):
     labels = df["label_idx"].values
     weights = compute_class_weight("balanced", classes=np.unique(labels), y=labels)
     class_weight_dict = {i: w for i, w in enumerate(weights)}
-    print("\n⚖️  Class Weights (handling imbalance):")
+    print("\nClass Weights (handling imbalance):")
     for i, cls in enumerate(CLASSES):
-        print(f"   {cls:6s} → {class_weight_dict[i]:.3f}")
+        print(f"   {cls:6s} => {class_weight_dict[i]:.3f}")
     return class_weight_dict
 
 
@@ -193,7 +193,7 @@ def build_model():
     from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, BatchNormalization
     from tensorflow.keras.models import Model
 
-    print("\n🏗️  Building MobileNetV2 model...")
+    print("\nBuilding MobileNetV2 model...")
 
     # Load MobileNetV2 backbone (pre-trained on ImageNet)
     base_model = MobileNetV2(
@@ -229,7 +229,7 @@ def train_phase1(model, train_gen, val_gen, class_weights):
     import tensorflow as tf
 
     print("\n" + "=" * 60)
-    print("📚 PHASE 1: Training classification head (base frozen)")
+    print("PHASE 1: Training classification head (base frozen)")
     print("=" * 60)
 
     model.compile(
@@ -258,11 +258,11 @@ def train_phase1(model, train_gen, val_gen, class_weights):
 
 
 def train_phase2(model, base_model, train_gen, val_gen, class_weights):
-    """Phase 2: Fine-tune — unfreeze last 30 layers of MobileNetV2."""
+    """Phase 2: Fine-tune -- unfreeze last 30 layers of MobileNetV2."""
     import tensorflow as tf
 
     print("\n" + "=" * 60)
-    print("🔧 PHASE 2: Fine-tuning (unfreezing last 30 layers)")
+    print("PHASE 2: Fine-tuning (unfreezing last 30 layers)")
     print("=" * 60)
 
     # Unfreeze the last 30 layers of the base model
@@ -305,7 +305,7 @@ def evaluate_model(model, val_gen):
     from sklearn.metrics import classification_report
 
     print("\n" + "=" * 60)
-    print("📊 EVALUATION RESULTS")
+    print("EVALUATION RESULTS")
     print("=" * 60)
 
     val_gen.reset()
@@ -322,13 +322,13 @@ def save_model(model):
     OUTPUT_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(OUTPUT_MODEL_PATH))
     size_mb = OUTPUT_MODEL_PATH.stat().st_size / (1024 * 1024)
-    print(f"\n💾 Model saved to: {OUTPUT_MODEL_PATH}")
+    print(f"\n[SAVED] Model saved to: {OUTPUT_MODEL_PATH}")
     print(f"   Size: {size_mb:.1f} MB")
 
 
 def main():
     print("=" * 60)
-    print("🔬 CareSlot — MobileNetV2 Skin Disease Model Training")
+    print("CareSlot -- MobileNetV2 Skin Disease Model Training")
     print("   Fine-tuning on HAM10000 (7-class classification)")
     print("=" * 60)
 
@@ -349,10 +349,10 @@ def main():
     # Step 4: Build model
     model, base_model = build_model()
 
-    # Step 5: Phase 1 — Train head
+    # Step 5: Phase 1 -- Train head
     train_phase1(model, train_gen, val_gen, class_weights)
 
-    # Step 6: Phase 2 — Fine-tune
+    # Step 6: Phase 2 -- Fine-tune
     train_phase2(model, base_model, train_gen, val_gen, class_weights)
 
     # Step 7: Evaluate
@@ -362,7 +362,7 @@ def main():
     save_model(model)
 
     print("\n" + "=" * 60)
-    print("✅ Training complete!")
+    print("[DONE] Training complete!")
     print(f"   Model: {OUTPUT_MODEL_PATH}")
     print("   Use this model by setting SKIN_MODEL_PATH in .env")
     print("=" * 60)
