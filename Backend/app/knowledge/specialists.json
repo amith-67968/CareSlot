@@ -1,0 +1,62 @@
+[
+  {
+    "name": "General Physician",
+    "also_known_as": ["GP", "Family Doctor", "Primary Care"],
+    "treats": ["fever", "cold", "flu", "fatigue", "general illness", "infections", "body pain"],
+    "when_to_visit": "For general health concerns, initial evaluation, and referrals to specialists"
+  },
+  {
+    "name": "Cardiologist",
+    "also_known_as": ["Heart Doctor", "Heart Specialist"],
+    "treats": ["chest pain", "heart palpitations", "hypertension", "heart disease", "shortness of breath"],
+    "when_to_visit": "For heart-related symptoms, chest pain, blood pressure issues, or cardiovascular risk"
+  },
+  {
+    "name": "Dermatologist",
+    "also_known_as": ["Skin Doctor", "Skin Specialist"],
+    "treats": ["skin rash", "acne", "eczema", "psoriasis", "skin infections", "moles", "skin lesions"],
+    "when_to_visit": "For skin conditions, unusual moles, persistent rashes, or cosmetic skin concerns"
+  },
+  {
+    "name": "Gynecologist",
+    "also_known_as": ["OB-GYN", "Women's Health Specialist"],
+    "treats": ["irregular periods", "PCOS", "PCOD", "pelvic pain", "hormonal imbalance", "pregnancy"],
+    "when_to_visit": "For menstrual issues, hormonal problems, reproductive health, or pregnancy care"
+  },
+  {
+    "name": "Endocrinologist",
+    "also_known_as": ["Hormone Specialist"],
+    "treats": ["diabetes", "thyroid disorders", "hormonal imbalance", "PCOS", "insulin resistance", "adrenal disorders"],
+    "when_to_visit": "For hormonal disorders, diabetes management, thyroid issues, or metabolic conditions"
+  },
+  {
+    "name": "Pulmonologist",
+    "also_known_as": ["Lung Doctor", "Respiratory Specialist"],
+    "treats": ["asthma", "COPD", "pneumonia", "chronic cough", "breathing difficulty", "sleep apnea"],
+    "when_to_visit": "For persistent breathing problems, chronic cough, or lung conditions"
+  },
+  {
+    "name": "Neurologist",
+    "also_known_as": ["Brain and Nerve Specialist"],
+    "treats": ["migraine", "severe headaches", "seizures", "numbness", "dizziness", "memory problems"],
+    "when_to_visit": "For persistent headaches, neurological symptoms, or nerve-related conditions"
+  },
+  {
+    "name": "Gastroenterologist",
+    "also_known_as": ["GI Specialist", "Digestive Health Doctor"],
+    "treats": ["stomach pain", "acid reflux", "IBS", "constipation", "liver disease", "digestive issues"],
+    "when_to_visit": "For persistent digestive problems, stomach pain, or gastrointestinal conditions"
+  },
+  {
+    "name": "Psychiatrist",
+    "also_known_as": ["Mental Health Doctor"],
+    "treats": ["anxiety", "depression", "mood disorders", "insomnia", "panic attacks", "stress disorders"],
+    "when_to_visit": "For mental health concerns, persistent anxiety, depression, or emotional difficulties"
+  },
+  {
+    "name": "Emergency Care",
+    "also_known_as": ["ER", "Emergency Room", "A&E"],
+    "treats": ["severe chest pain", "difficulty breathing", "severe bleeding", "loss of consciousness", "stroke symptoms", "severe allergic reactions"],
+    "when_to_visit": "For life-threatening emergencies, severe injuries, or symptoms requiring immediate attention"
+  }
+]

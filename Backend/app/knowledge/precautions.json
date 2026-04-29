@@ -1,0 +1,37 @@
+[
+  {
+    "condition": "Fever",
+    "precautions": ["Stay hydrated with water and clear fluids", "Rest adequately", "Use light clothing", "Monitor temperature every 4 hours", "Seek medical help if fever exceeds 103°F or lasts more than 3 days"],
+    "home_remedies": ["Lukewarm sponge bath", "Drink ginger tea", "Stay in cool environment", "Use cold compress on forehead"]
+  },
+  {
+    "condition": "Chest Pain",
+    "precautions": ["Do NOT ignore chest pain — seek immediate medical attention", "Avoid physical exertion", "Rest in a comfortable position", "Chew aspirin if cardiac cause is suspected", "Call emergency services for severe pain"],
+    "home_remedies": ["Rest in calm position", "Stay hydrated", "Practice deep slow breathing if anxiety-related", "Avoid caffeine and heavy meals"]
+  },
+  {
+    "condition": "Cough",
+    "precautions": ["Cover mouth when coughing", "Stay hydrated", "Avoid irritants and smoke", "Use humidifier", "See doctor if cough persists beyond 2 weeks"],
+    "home_remedies": ["Honey and warm water", "Steam inhalation", "Turmeric milk", "Ginger and lemon tea", "Salt water gargle"]
+  },
+  {
+    "condition": "Headache",
+    "precautions": ["Stay hydrated", "Reduce screen time", "Get adequate sleep", "Manage stress levels", "Track potential triggers"],
+    "home_remedies": ["Cold or warm compress", "Peppermint oil on temples", "Adequate hydration", "Rest in dark quiet room", "Gentle neck stretches"]
+  },
+  {
+    "condition": "Skin Rash",
+    "precautions": ["Avoid scratching", "Keep area clean and dry", "Avoid known allergens", "Use gentle unscented products", "See dermatologist if spreading or persistent"],
+    "home_remedies": ["Oatmeal bath", "Aloe vera gel", "Cold compress", "Coconut oil for moisture", "Calamine lotion"]
+  },
+  {
+    "condition": "Stomach Pain",
+    "precautions": ["Avoid spicy and oily foods", "Eat small frequent meals", "Stay hydrated", "Avoid lying down immediately after eating", "Seek help for severe or persistent pain"],
+    "home_remedies": ["Ginger tea", "Peppermint tea", "Warm compress on abdomen", "BRAT diet (bananas, rice, applesauce, toast)", "Fennel seeds"]
+  },
+  {
+    "condition": "Breathing Difficulty",
+    "precautions": ["Seek IMMEDIATE medical attention for sudden breathing difficulty", "Sit upright", "Stay calm", "Use prescribed inhaler if available", "Avoid triggers and irritants"],
+    "home_remedies": ["Pursed lip breathing", "Steam inhalation (if not asthma)", "Stay in well-ventilated area", "Hot coffee (small amount for mild asthma)"]
+  }
+]

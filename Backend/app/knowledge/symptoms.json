@@ -1,0 +1,82 @@
+[
+  {
+    "name": "fever",
+    "description": "Elevated body temperature above 98.6°F (37°C)",
+    "common_causes": ["viral infection", "bacterial infection", "flu", "COVID-19", "urinary tract infection"],
+    "associated_symptoms": ["chills", "sweating", "headache", "body aches", "fatigue"],
+    "risk_indicators": ["temperature above 103°F", "persistent fever over 3 days", "neck stiffness", "severe headache"],
+    "urgency": "medium"
+  },
+  {
+    "name": "chest pain",
+    "description": "Pain or discomfort in the chest area",
+    "common_causes": ["heart attack", "angina", "acid reflux", "muscle strain", "anxiety", "pulmonary embolism"],
+    "associated_symptoms": ["shortness of breath", "arm pain", "jaw pain", "nausea", "sweating"],
+    "risk_indicators": ["sudden severe pain", "pain radiating to arm or jaw", "difficulty breathing", "dizziness"],
+    "urgency": "critical"
+  },
+  {
+    "name": "headache",
+    "description": "Pain in the head or upper neck region",
+    "common_causes": ["tension headache", "migraine", "dehydration", "sinusitis", "eye strain", "hypertension"],
+    "associated_symptoms": ["nausea", "light sensitivity", "neck stiffness", "visual disturbances"],
+    "risk_indicators": ["sudden thunderclap headache", "worst headache of life", "neurological symptoms", "fever with stiff neck"],
+    "urgency": "low"
+  },
+  {
+    "name": "cough",
+    "description": "Reflex action to clear the airways",
+    "common_causes": ["common cold", "flu", "bronchitis", "asthma", "allergies", "pneumonia", "COVID-19"],
+    "associated_symptoms": ["sore throat", "runny nose", "chest congestion", "wheezing", "fever"],
+    "risk_indicators": ["coughing blood", "persistent cough over 3 weeks", "high fever", "severe breathing difficulty"],
+    "urgency": "low"
+  },
+  {
+    "name": "breathing difficulty",
+    "description": "Shortness of breath or labored breathing",
+    "common_causes": ["asthma", "pneumonia", "COPD", "anxiety", "heart failure", "pulmonary embolism"],
+    "associated_symptoms": ["wheezing", "chest tightness", "rapid breathing", "cyanosis"],
+    "risk_indicators": ["sudden onset", "chest pain", "bluish lips", "inability to speak full sentences"],
+    "urgency": "critical"
+  },
+  {
+    "name": "stomach pain",
+    "description": "Pain or discomfort in the abdominal area",
+    "common_causes": ["indigestion", "gastritis", "food poisoning", "appendicitis", "IBS", "ulcer"],
+    "associated_symptoms": ["nausea", "vomiting", "diarrhea", "bloating", "loss of appetite"],
+    "risk_indicators": ["severe localized pain", "bloody stool", "high fever", "rigid abdomen"],
+    "urgency": "medium"
+  },
+  {
+    "name": "throat pain",
+    "description": "Pain, scratchiness, or irritation of the throat",
+    "common_causes": ["viral pharyngitis", "strep throat", "tonsillitis", "allergies", "acid reflux"],
+    "associated_symptoms": ["difficulty swallowing", "swollen lymph nodes", "hoarse voice", "fever"],
+    "risk_indicators": ["inability to swallow", "drooling", "severe swelling", "difficulty breathing"],
+    "urgency": "low"
+  },
+  {
+    "name": "fatigue",
+    "description": "Persistent tiredness or lack of energy",
+    "common_causes": ["poor sleep", "anemia", "thyroid disorder", "depression", "diabetes", "chronic fatigue syndrome"],
+    "associated_symptoms": ["weakness", "poor concentration", "irritability", "muscle aches"],
+    "risk_indicators": ["unexplained weight loss", "persistent over 2 weeks", "accompanied by fever"],
+    "urgency": "low"
+  },
+  {
+    "name": "irregular periods",
+    "description": "Menstrual cycles that are unpredictable in timing or flow",
+    "common_causes": ["PCOS", "thyroid disorder", "stress", "hormonal imbalance", "perimenopause"],
+    "associated_symptoms": ["weight changes", "acne", "excessive hair growth", "mood swings", "pelvic pain"],
+    "risk_indicators": ["absence of periods for 3+ months", "very heavy bleeding", "severe pain"],
+    "urgency": "medium"
+  },
+  {
+    "name": "skin rash",
+    "description": "Change in skin color, texture, or appearance",
+    "common_causes": ["allergic reaction", "eczema", "contact dermatitis", "fungal infection", "psoriasis"],
+    "associated_symptoms": ["itching", "redness", "swelling", "blistering", "dry skin"],
+    "risk_indicators": ["rapidly spreading", "fever with rash", "difficulty breathing", "facial swelling"],
+    "urgency": "medium"
+  }
+]

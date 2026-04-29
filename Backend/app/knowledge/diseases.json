@@ -1,0 +1,92 @@
+[
+  {
+    "condition": "Common Cold",
+    "category": "respiratory",
+    "symptoms": ["runny nose", "sore throat", "cough", "congestion", "mild headache", "sneezing"],
+    "precautions": ["Rest adequately", "Stay hydrated", "Wash hands frequently", "Avoid close contact with others"],
+    "home_remedies": ["Warm salt water gargle", "Honey and lemon tea", "Steam inhalation", "Chicken soup"],
+    "specialist": "General Physician",
+    "severity": "low"
+  },
+  {
+    "condition": "Influenza (Flu)",
+    "category": "respiratory",
+    "symptoms": ["high fever", "body aches", "fatigue", "cough", "headache", "chills"],
+    "precautions": ["Get annual flu vaccine", "Rest and isolate", "Stay hydrated", "Monitor temperature"],
+    "home_remedies": ["Warm fluids", "Rest", "Humidifier use", "Over-the-counter pain relievers"],
+    "specialist": "General Physician",
+    "severity": "medium"
+  },
+  {
+    "condition": "Hypertension",
+    "category": "cardiovascular",
+    "symptoms": ["headache", "dizziness", "blurred vision", "chest pain", "shortness of breath"],
+    "precautions": ["Reduce sodium intake", "Exercise regularly", "Manage stress", "Monitor blood pressure regularly"],
+    "home_remedies": ["DASH diet", "Regular walking", "Meditation", "Adequate sleep"],
+    "specialist": "Cardiologist",
+    "severity": "high"
+  },
+  {
+    "condition": "Type 2 Diabetes",
+    "category": "endocrine",
+    "symptoms": ["frequent urination", "excessive thirst", "fatigue", "blurred vision", "slow healing wounds"],
+    "precautions": ["Monitor blood sugar", "Follow prescribed diet", "Regular exercise", "Take medications as prescribed"],
+    "home_remedies": ["Balanced low-GI diet", "Regular physical activity", "Weight management", "Stress reduction"],
+    "specialist": "Endocrinologist",
+    "severity": "high"
+  },
+  {
+    "condition": "PCOS / PCOD",
+    "category": "gynecological",
+    "symptoms": ["irregular periods", "weight gain", "acne", "excessive hair growth", "hair thinning", "mood swings"],
+    "precautions": ["Maintain healthy weight", "Regular exercise", "Balanced diet", "Regular gynecological checkups"],
+    "home_remedies": ["Anti-inflammatory diet", "Regular exercise", "Stress management", "Adequate sleep"],
+    "specialist": "Gynecologist / Endocrinologist",
+    "severity": "medium"
+  },
+  {
+    "condition": "Asthma",
+    "category": "respiratory",
+    "symptoms": ["wheezing", "shortness of breath", "chest tightness", "cough", "difficulty breathing at night"],
+    "precautions": ["Avoid triggers", "Carry rescue inhaler", "Follow action plan", "Regular checkups"],
+    "home_remedies": ["Breathing exercises", "Steam inhalation", "Warm fluids", "Avoid cold air"],
+    "specialist": "Pulmonologist",
+    "severity": "medium"
+  },
+  {
+    "condition": "Migraine",
+    "category": "neurological",
+    "symptoms": ["severe headache", "nausea", "light sensitivity", "sound sensitivity", "visual aura"],
+    "precautions": ["Identify triggers", "Maintain sleep schedule", "Stay hydrated", "Manage stress"],
+    "home_remedies": ["Dark quiet room", "Cold compress", "Caffeine (small amounts)", "Peppermint oil"],
+    "specialist": "Neurologist",
+    "severity": "medium"
+  },
+  {
+    "condition": "Gastroesophageal Reflux Disease (GERD)",
+    "category": "gastrointestinal",
+    "symptoms": ["heartburn", "acid reflux", "chest pain", "difficulty swallowing", "sore throat"],
+    "precautions": ["Avoid trigger foods", "Don't lie down after eating", "Eat smaller meals", "Maintain healthy weight"],
+    "home_remedies": ["Elevate head while sleeping", "Avoid spicy and fatty foods", "Ginger tea", "Aloe vera juice"],
+    "specialist": "Gastroenterologist",
+    "severity": "low"
+  },
+  {
+    "condition": "Eczema (Atopic Dermatitis)",
+    "category": "dermatological",
+    "symptoms": ["itchy skin", "dry patches", "redness", "swelling", "cracking skin"],
+    "precautions": ["Moisturize regularly", "Avoid harsh soaps", "Identify triggers", "Wear soft fabrics"],
+    "home_remedies": ["Oatmeal baths", "Coconut oil application", "Cool compresses", "Fragrance-free moisturizers"],
+    "specialist": "Dermatologist",
+    "severity": "low"
+  },
+  {
+    "condition": "Anxiety Disorder",
+    "category": "mental_health",
+    "symptoms": ["excessive worry", "restlessness", "rapid heartbeat", "difficulty concentrating", "sleep problems", "muscle tension"],
+    "precautions": ["Practice relaxation techniques", "Regular exercise", "Limit caffeine", "Seek professional help"],
+    "home_remedies": ["Deep breathing exercises", "Meditation", "Regular exercise", "Journaling"],
+    "specialist": "Psychiatrist",
+    "severity": "medium"
+  }
+]

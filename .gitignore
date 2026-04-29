@@ -41,6 +41,15 @@ ml_models/*.tflite
 ml_models/*.bin
 !ml_models/.gitkeep
 
+# Datasets (large files — keep READMEs only)
+Backend/data/ham10000/HAM10000_images_part_1/
+Backend/data/ham10000/HAM10000_images_part_2/
+Backend/data/ham10000/*.csv
+!Backend/data/ham10000/README.md
+
+# Vector DB (generated at runtime)
+chroma_db/
+
 # Logs
 *.log
 

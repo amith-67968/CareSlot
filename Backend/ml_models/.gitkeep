@@ -1,0 +1,3 @@
+# ML Models Directory
+# Place your fine-tuned model weights here:
+# - mobilenetv2_ham10000.h5 (Skin disease detection model)
