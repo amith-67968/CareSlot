@@ -5,9 +5,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { chatAPI } from '../../services/api';
+import useSpeechRecognition from '../../hooks/useSpeechRecognition';
 import {
   Send, Bot, User, Loader2, AlertTriangle, Sparkles,
   RotateCcw, ClipboardList, Shield, Stethoscope,
+  Mic, MicOff,
 } from 'lucide-react';
 
 const SUGGESTIONS = [
@@ -25,6 +27,18 @@ export default function Chat() {
   const [mode, setMode] = useState('chat'); // 'chat' or 'symptom'
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const {
+    clearError: clearVoiceError,
+    error: voiceError,
+    isListening: voiceListening,
+    isSupported: voiceSupported,
+    stopListening: stopVoiceInput,
+    toggleListening: toggleVoiceInput,
+  } = useSpeechRecognition({
+    value: input,
+    onChange: setInput,
+    disabled: loading,
+  });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,6 +51,7 @@ export default function Chat() {
   const handleSend = async () => {
     const text = input.trim();
     if (!text || loading) return;
+    stopVoiceInput();
 
     addMsg('user', text);
     setInput('');
@@ -73,15 +88,18 @@ export default function Chat() {
   };
 
   const handleSuggestion = (text) => {
+    clearVoiceError();
     setInput(text);
     setMode('symptom');
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const resetChat = () => {
+    stopVoiceInput();
     setMessages([]);
     setSessionId(null);
     setInput('');
+    clearVoiceError();
   };
 
   const riskColors = {
@@ -221,24 +239,49 @@ export default function Chat() {
       </div>
 
       {/* Input */}
-      <div className="chat-input-bar">
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder={mode === 'symptom' ? 'Describe your symptoms...' : 'Type your message...'}
-          disabled={loading}
-        />
-        <button
-          className="chat-send-btn"
-          onClick={handleSend}
-          disabled={!input.trim() || loading}
-          aria-label="Send"
-        >
-          {loading ? <Loader2 size={18} className="auth-spinner" /> : <Send size={18} />}
-        </button>
+      <div className="chat-composer">
+        <div className="chat-input-bar">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => {
+              clearVoiceError();
+              setInput(e.target.value);
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder={voiceListening ? 'Listening...' : (mode === 'symptom' ? 'Describe your symptoms...' : 'Type your message...')}
+            disabled={loading}
+          />
+          <button
+            type="button"
+            className={`chat-voice-btn ${voiceListening ? 'chat-voice-active' : ''}`}
+            onClick={() => {
+              toggleVoiceInput();
+              inputRef.current?.focus();
+            }}
+            disabled={loading || !voiceSupported}
+            title={voiceSupported ? (voiceListening ? 'Stop voice input' : 'Start voice input') : 'Voice input is not supported in this browser'}
+            aria-label={voiceListening ? 'Stop voice input' : 'Start voice input'}
+            aria-pressed={voiceListening}
+          >
+            {voiceListening ? <MicOff size={18} /> : <Mic size={18} />}
+          </button>
+          <button
+            className="chat-send-btn"
+            onClick={handleSend}
+            disabled={!input.trim() || loading}
+            aria-label="Send"
+          >
+            {loading ? <Loader2 size={18} className="auth-spinner" /> : <Send size={18} />}
+          </button>
+        </div>
+        {voiceError && (
+          <div className="chat-voice-error" role="status">
+            <AlertTriangle size={12} />
+            <span>{voiceError}</span>
+          </div>
+        )}
       </div>
     </div>
   );

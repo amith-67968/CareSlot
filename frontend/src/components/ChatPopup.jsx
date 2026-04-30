@@ -8,12 +8,13 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { chatAPI } from '../services/api';
+import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import {
   MessageCircle, X, Send, RotateCcw,
   AlertTriangle, Loader2, HeartPulse,
   ShieldAlert, Stethoscope, Home, MapPin,
   Star, ChevronRight, Activity,
-  Pill, Navigation,
+  Pill, Navigation, Mic, MicOff,
 } from 'lucide-react';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
@@ -165,6 +166,19 @@ export default function ChatPopup() {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [userLocation, setUserLocation] = useState(null);
   const messagesEnd = useRef(null);
+  const inputRef = useRef(null);
+  const {
+    clearError: clearVoiceError,
+    error: voiceError,
+    isListening: voiceListening,
+    isSupported: voiceSupported,
+    stopListening: stopVoiceInput,
+    toggleListening: toggleVoiceInput,
+  } = useSpeechRecognition({
+    value: input,
+    onChange: setInput,
+    disabled: loading,
+  });
 
   // Request geolocation on first open — with IP-based fallback
   useEffect(() => {
@@ -200,6 +214,7 @@ export default function ChatPopup() {
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
+    stopVoiceInput();
 
     const userMsg = { role: 'user', text };
     setMessages((prev) => [...prev, userMsg]);
@@ -228,7 +243,7 @@ export default function ChatPopup() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, sessionId, userLocation]);
+  }, [input, loading, sessionId, stopVoiceInput, userLocation]);
 
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -238,7 +253,10 @@ export default function ChatPopup() {
   };
 
   const reset = () => {
+    stopVoiceInput();
     setMessages([]);
+    setInput('');
+    clearVoiceError();
   };
 
   return (
@@ -364,22 +382,49 @@ export default function ChatPopup() {
           </div>
 
           {/* Input */}
-          <div className="chat-popup-input">
-            <input
-              type="text"
-              placeholder="Describe your symptoms..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              disabled={loading}
-            />
-            <button
-              className="chat-popup-send"
-              onClick={sendMessage}
-              disabled={!input.trim() || loading}
-            >
-              {loading ? <Loader2 size={16} className="chat-popup-spinner" /> : <Send size={16} />}
-            </button>
+          <div className="chat-popup-composer">
+            <div className="chat-popup-input">
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={voiceListening ? 'Listening...' : 'Describe your symptoms...'}
+                value={input}
+                onChange={(e) => {
+                  clearVoiceError();
+                  setInput(e.target.value);
+                }}
+                onKeyDown={handleKey}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                className={`chat-voice-btn ${voiceListening ? 'chat-voice-active' : ''}`}
+                onClick={() => {
+                  toggleVoiceInput();
+                  inputRef.current?.focus();
+                }}
+                disabled={loading || !voiceSupported}
+                title={voiceSupported ? (voiceListening ? 'Stop voice input' : 'Start voice input') : 'Voice input is not supported in this browser'}
+                aria-label={voiceListening ? 'Stop voice input' : 'Start voice input'}
+                aria-pressed={voiceListening}
+              >
+                {voiceListening ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
+              <button
+                className="chat-popup-send"
+                onClick={sendMessage}
+                disabled={!input.trim() || loading}
+                aria-label="Send message"
+              >
+                {loading ? <Loader2 size={16} className="chat-popup-spinner" /> : <Send size={16} />}
+              </button>
+            </div>
+            {voiceError && (
+              <div className="chat-voice-error" role="status">
+                <AlertTriangle size={12} />
+                <span>{voiceError}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
