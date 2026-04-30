@@ -67,6 +67,7 @@ class ReminderCreate(BaseModel):
     scheduled_at: datetime
     reference_id: Optional[str] = Field(None, description="Linked appointment/prediction ID")
     recurrence: Recurrence = Recurrence.NONE
+    delivery_channels: List[str] = Field(default_factory=lambda: ["email", "sms"])
 
 class ReminderUpdate(BaseModel):
     """Update an existing reminder."""
@@ -87,6 +88,10 @@ class ReminderResponse(BaseModel):
     status: str
     reference_id: Optional[str] = None
     recurrence: str = "none"
+    delivery_channels: Optional[List[str]] = None
+    email_status: Optional[str] = None
+    sms_status: Optional[str] = None
+    sent_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
 
 class ReminderListResponse(BaseModel):

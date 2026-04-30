@@ -38,6 +38,25 @@ class Settings(BaseSettings):
     # --- Google Maps ---
     GOOGLE_MAPS_API_KEY: str = ""
 
+    # --- Hospital/EHR Booking Integrations ---
+    # JSON object keyed by Google place_id, for example:
+    # {"ChIJ...": {"base_url": "https://ehr.example.com/api", "api_key": "..."}}
+    HOSPITAL_API_REGISTRY_JSON: str = "{}"
+    HOSPITAL_API_TIMEOUT_SECONDS: float = 12.0
+
+    # --- Scheduled Reminder Delivery ---
+    CRON_SECRET: str = ""
+    ENABLE_EMAIL_NOTIFICATIONS: bool = False
+    ENABLE_SMS_NOTIFICATIONS: bool = False
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "notifications@careslot.ai"
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM_NUMBER: str = ""
+
     # --- ChromaDB ---
     CHROMA_PERSIST_DIR: str = "./chroma_db"
 

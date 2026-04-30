@@ -154,6 +154,13 @@ const post = (path, body) =>
 const put = (path, body) =>
   request(path, { method: 'PUT', body: body === undefined ? undefined : JSON.stringify(body) });
 const del = (path) => request(path, { method: 'DELETE' });
+const qs = (params) => new URLSearchParams(
+  Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+).toString();
+
+export function apiAssetUrl(path) {
+  return getRequestUrl(path);
+}
 
 export const authAPI = {
   login: (email, password) => post('/api/auth/login', { email, password }),
@@ -210,10 +217,33 @@ export const appointmentAPI = {
   get: (id) => get(`/api/appointments/${id}`),
   create: (data) => post('/api/appointments', data),
   update: (id, data) => put(`/api/appointments/${id}`, data),
+  reschedule: (id, data) => put(`/api/appointments/${id}/reschedule`, data),
   cancel: (id) => del(`/api/appointments/${id}`),
-  getSlots: (date, doctorName, type) =>
+  stats: () => get('/api/appointments/stats'),
+  recommendSpecialist: (data = {}) => post('/api/appointments/recommendation', data),
+  findHospitals: (latitude, longitude, specialty, radius = 5000, keyword) =>
+    post('/api/appointments/hospitals/nearby', {
+      latitude,
+      longitude,
+      specialty,
+      radius,
+      keyword,
+    }),
+  getHospitalDoctors: (placeId, specialty, hospitalName, hospitalAddress) =>
+    get(`/api/appointments/hospitals/${encodeURIComponent(placeId)}/doctors?${qs({
+      specialty,
+      hospital_name: hospitalName,
+      hospital_address: hospitalAddress,
+    })}`),
+  getSlots: (date, doctorName, type, hospitalPlaceId, doctorId) =>
     get(
-      `/api/appointments/slots?date=${date}${doctorName ? `&doctor_name=${doctorName}` : ''}${type ? `&consultation_type=${type}` : ''}`
+      `/api/appointments/slots?${qs({
+        date,
+        doctor_name: doctorName,
+        consultation_type: type,
+        hospital_place_id: hospitalPlaceId,
+        doctor_id: doctorId,
+      })}`
     ),
 };
 
@@ -228,6 +258,8 @@ export const doctorAPI = {
     }),
   getDetails: (placeId) => get(`/api/doctors/place/${placeId}`),
   getSpecialties: () => get('/api/doctors/specialties'),
+  photoUrl: (photoReference, maxWidth = 900) =>
+    apiAssetUrl(`/api/doctors/photo?${qs({ photo_reference: photoReference, max_width: maxWidth })}`),
 };
 
 export const notificationAPI = {

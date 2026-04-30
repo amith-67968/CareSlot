@@ -3,7 +3,7 @@ CareSlot — Doctor Recommendation Router
 Endpoints for finding nearby doctors/hospitals.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from app.models.doctor import NearbyDoctorRequest, NearbyDoctorResponse, SpecialtyListResponse
 from app.services.doctor_service import DoctorService
 from app.dependencies import get_current_user
@@ -35,7 +35,18 @@ async def get_place_details(place_id: str, user: dict = Depends(get_current_user
     return await service.get_place_details(place_id)
 
 
+@router.get("/photo")
+async def get_place_photo(photo_reference: str, max_width: int = 900):
+    """Proxy Google Places photos without exposing the Maps API key to the browser."""
+    service = DoctorService()
+    content, content_type = await service.fetch_photo(photo_reference, max_width=max_width)
+    if not content:
+        raise HTTPException(404, "Photo not available")
+    return Response(content=content, media_type=content_type)
+
+
 @router.get("/specialties", response_model=SpecialtyListResponse)
 async def get_specialties():
     """Get list of available medical specialties for search."""
-    return SpecialtyListResponse()
+    service = DoctorService()
+    return SpecialtyListResponse(specialties=service.get_specialties())
