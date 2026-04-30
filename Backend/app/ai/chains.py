@@ -13,6 +13,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+EMERGENCY_TERMS = [
+    "chest pain", "chest tightness", "difficulty breathing", "shortness of breath",
+    "can't breathe", "cant breathe", "stroke", "fainting", "unconscious",
+    "severe bleeding", "seizure", "blue lips",
+]
+
 
 # ─── Prompts ──────────────────────────────────────────────────────────
 
@@ -112,6 +118,114 @@ def _format_docs(docs: List[Document]) -> str:
     return "\n\n---\n\n".join(doc.page_content for doc in docs)
 
 
+def _retrieve_context(query: str, k: int = 5) -> str:
+    """Retrieve RAG context, but never let retrieval failure block guidance."""
+    try:
+        retriever = get_retriever(k=k)
+        return _format_docs(retriever.invoke(query))
+    except Exception as e:
+        logger.warning(f"RAG retrieval unavailable, continuing without context: {e}")
+        return "No specific medical knowledge context available."
+
+
+def _rule_based_health_fallback(message: str) -> Dict[str, Any]:
+    """Deterministic safety fallback for common symptom messages."""
+    text = (message or "").lower()
+
+    if any(term in text for term in EMERGENCY_TERMS):
+        return {
+            "summary": (
+                "Chest pain or breathing trouble can be urgent. Please seek emergency medical help now, "
+                "especially if the pain is severe, spreading to your arm/jaw/back, or comes with sweating, "
+                "nausea, dizziness, or shortness of breath."
+            ),
+            "prediction": "Possible cardiac, lung, gastrointestinal, or muscle-related chest pain; serious causes must be ruled out urgently.",
+            "risk_level": "critical",
+            "precautions": [
+                "Stop physical activity and sit upright or rest comfortably",
+                "Do not drive yourself if symptoms are significant",
+                "Call local emergency services or go to the nearest emergency department",
+                "Tell a nearby person what is happening if you are alone",
+            ],
+            "home_remedies": [],
+            "recommended_specialist": "Emergency Care / Cardiologist",
+            "next_steps": [
+                "Seek immediate in-person medical evaluation",
+                "If prescribed by your doctor for heart symptoms, follow that emergency plan",
+                "Share your age, medical history, medications, and symptom timing with clinicians",
+            ],
+            "is_structured": True,
+        }
+
+    if "fever" in text:
+        return {
+            "summary": "A fever is often caused by infection or inflammation. Monitor your temperature and watch for warning signs.",
+            "prediction": "Possible viral or bacterial infection",
+            "risk_level": "medium",
+            "precautions": ["Rest", "Drink fluids", "Monitor temperature", "Seek care if fever is high or persistent"],
+            "home_remedies": ["Use light clothing", "Take lukewarm sponge baths", "Drink warm fluids"],
+            "recommended_specialist": "General Physician",
+            "next_steps": ["Consult a clinician if fever lasts more than 3 days or exceeds 103 F"],
+            "is_structured": True,
+        }
+
+    if "headache" in text:
+        return {
+            "summary": "Headaches are commonly related to tension, migraine, dehydration, sinus issues, or eye strain, but severe sudden headaches need urgent care.",
+            "prediction": "Possible tension headache, migraine, dehydration, sinus headache, or other cause",
+            "risk_level": "low",
+            "precautions": [
+                "Hydrate",
+                "Rest in a quiet place",
+                "Avoid excess screen time",
+                "Seek urgent care for sudden severe headache or neurological symptoms",
+            ],
+            "home_remedies": ["Cold or warm compress", "Gentle neck stretches", "Adequate sleep"],
+            "recommended_specialist": "General Physician",
+            "next_steps": ["Track triggers and consult a doctor if headaches are frequent or worsening"],
+            "is_structured": True,
+        }
+
+    return {
+        "summary": (
+            "I could not complete the AI analysis right now, but your symptoms still deserve attention. "
+            "Please monitor how you feel and consult a qualified healthcare professional for proper evaluation."
+        ),
+        "prediction": "Unable to determine from the available information",
+        "risk_level": "medium",
+        "precautions": [
+            "Avoid ignoring worsening symptoms",
+            "Rest and stay hydrated if appropriate",
+            "Seek medical advice for proper evaluation",
+        ],
+        "home_remedies": [],
+        "recommended_specialist": "General Physician",
+        "next_steps": ["Try again shortly", "Consult a healthcare professional if symptoms persist or worsen"],
+        "is_structured": True,
+    }
+
+
+def _apply_emergency_guardrails(result: Dict[str, Any], message: str) -> Dict[str, Any]:
+    """Force emergency-safe guidance when user text contains red-flag symptoms."""
+    if not any(term in (message or "").lower() for term in EMERGENCY_TERMS):
+        return result
+
+    emergency = _rule_based_health_fallback(message)
+    result["summary"] = emergency["summary"]
+    result["prediction"] = result.get("prediction") or emergency["prediction"]
+    result["risk_level"] = "critical"
+    result["recommended_specialist"] = emergency["recommended_specialist"]
+    result["precautions"] = list(dict.fromkeys(
+        emergency["precautions"] + (result.get("precautions") or [])
+    ))
+    result["next_steps"] = list(dict.fromkeys(
+        emergency["next_steps"] + (result.get("next_steps") or [])
+    ))
+    result["home_remedies"] = result.get("home_remedies") or []
+    result["is_structured"] = True
+    return result
+
+
 def get_symptom_analysis_chain():
     """
     Build the symptom analysis chain using RAG.
@@ -119,11 +233,10 @@ def get_symptom_analysis_chain():
     Flow: symptoms → retrieve context → LLM → JSON response
     """
     llm = get_llm()
-    retriever = get_retriever(k=5)
 
     chain = (
         {
-            "context": lambda x: _format_docs(retriever.invoke(x["symptoms"])),
+            "context": lambda x: _retrieve_context(x["symptoms"], k=5),
             "symptoms": lambda x: x["symptoms"],
             "additional_context": lambda x: x.get("additional_context", "None provided"),
         }
@@ -141,11 +254,10 @@ def get_conversation_chain():
     Returns structured JSON via JsonOutputParser.
     """
     llm = get_llm()
-    retriever = get_retriever(k=3)
 
     chain = (
         {
-            "context": lambda x: _format_docs(retriever.invoke(x["message"])),
+            "context": lambda x: _retrieve_context(x["message"], k=3),
             "chat_history": lambda x: x.get("chat_history", []),
             "message": lambda x: x["message"],
         }
@@ -187,9 +299,8 @@ async def run_symptom_analysis(
     Returns:
         Structured analysis result dict.
     """
-    chain = get_symptom_analysis_chain()
-
     try:
+        chain = get_symptom_analysis_chain()
         result = await chain.ainvoke({
             "symptoms": symptoms,
             "additional_context": additional_context or "None provided",
@@ -209,18 +320,16 @@ async def run_symptom_analysis(
             if key not in result:
                 result[key] = default
 
+        result = _apply_emergency_guardrails(result, symptoms)
         return result
 
     except Exception as e:
         logger.error(f"Symptom analysis chain error: {e}")
-        return {
-            "prediction": "Analysis could not be completed. Please consult a healthcare professional.",
-            "risk_level": "medium",
-            "precautions": ["Seek medical advice for proper evaluation"],
-            "home_remedies": [],
-            "recommended_specialist": "General Physician",
-            "next_steps": ["Visit a healthcare professional for proper diagnosis"],
-        }
+        fallback = _rule_based_health_fallback(f"{symptoms} {additional_context}")
+        return {key: fallback[key] for key in (
+            "prediction", "risk_level", "precautions", "home_remedies",
+            "recommended_specialist", "next_steps",
+        )}
 
 
 async def run_conversation(
@@ -260,6 +369,8 @@ async def run_conversation(
             if key not in result or result[key] is None:
                 result[key] = default
 
+        result = _apply_emergency_guardrails(result, message)
+
         # Determine if this is a structured health response
         result["is_structured"] = bool(
             result.get("prediction") or
@@ -271,21 +382,7 @@ async def run_conversation(
 
     except Exception as e:
         logger.error(f"Conversation chain error: {e}")
-        return {
-            "summary": (
-                "I'm sorry, I'm having trouble processing your request right now. "
-                "This could be because the AI model is still loading. "
-                "Please try again in a moment. If your symptoms are severe or urgent, "
-                "please seek immediate medical attention."
-            ),
-            "prediction": None,
-            "risk_level": None,
-            "precautions": [],
-            "home_remedies": [],
-            "recommended_specialist": None,
-            "next_steps": [],
-            "is_structured": False,
-        }
+        return _rule_based_health_fallback(message)
 
 
 async def run_skin_analysis(
@@ -366,7 +463,7 @@ Respond ONLY with valid JSON."""),
 def get_pcod_analysis_chain():
     """Build the PCOD analysis chain."""
     llm = get_llm()
-    return PCOD_ANALYSIS_PROMPT | llm | _parse_json_output
+    return PCOD_ANALYSIS_PROMPT | llm | JsonOutputParser()
 
 
 async def run_pcod_analysis(
@@ -403,4 +500,3 @@ async def run_pcod_analysis(
             "doctor_consultation_needed": True,
             "urgent": False,
         }
-

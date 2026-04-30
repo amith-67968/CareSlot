@@ -12,7 +12,7 @@ import {
   MessageCircle, X, Send, RotateCcw,
   AlertTriangle, Loader2, HeartPulse,
   ShieldAlert, Stethoscope, Home, MapPin,
-  Star, ExternalLink, ChevronRight, Activity,
+  Star, ChevronRight, Activity,
   Pill, Navigation,
 } from 'lucide-react';
 
@@ -185,10 +185,7 @@ export default function ChatPopup() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {
-          console.log('Browser geolocation denied — falling back to IP location');
-          fetchIPLocation();
-        },
+        () => fetchIPLocation(),
         { enableHighAccuracy: false, timeout: 5000 },
       );
     } else {
@@ -223,7 +220,7 @@ export default function ChatPopup() {
         structured: data.is_structured ? data : null,
       };
       setMessages((prev) => [...prev, botMsg]);
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', text: 'Sorry, I encountered an error. Please try again.', error: true },
@@ -267,7 +264,7 @@ export default function ChatPopup() {
                 <h3>CareSlot AI</h3>
                 <span className="chat-popup-status">
                   <span className="chat-popup-dot" />
-                  Llama 3.2 · Online
+                  Health guidance ready
                 </span>
               </div>
             </div>
