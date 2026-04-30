@@ -10,7 +10,7 @@ import {
   ArrowLeft, AlertTriangle, CheckCircle2, ShieldAlert,
   Stethoscope, MapPin, Star, Clock, Calendar, X,
   HeartPulse, Sparkles, ShieldCheck, Apple, Dumbbell,
-  Activity, Baby, Loader2, BookOpen,
+  Activity, Baby, Loader2, BookOpen, ExternalLink,
 } from 'lucide-react';
 
 const RISK_META = {
@@ -18,6 +18,29 @@ const RISK_META = {
   medium: { bg: '#fef3c7', color: '#b45309', Icon: AlertTriangle, label: 'Moderate Risk' },
   high:   { bg: '#fee2e2', color: '#dc2626', Icon: ShieldAlert,  label: 'High Risk' },
 };
+
+const FALLBACK_SLOTS = ['10:00', '11:00', '14:00', '15:00', '16:00'];
+
+function getSpecialtyKey(specialist) {
+  const label = (specialist || '').toLowerCase();
+  if (label.includes('endocrin')) return 'endocrinologist';
+  return 'gynecologist';
+}
+
+function getSpecialtyLabel(specialist) {
+  return specialist || 'Gynecologist';
+}
+
+function formatSlotLabel(slot) {
+  const value = typeof slot === 'string' ? slot : slot?.time;
+  if (!value) return '';
+  const [hourRaw, minute = '00'] = value.split(':');
+  const hour = Number(hourRaw);
+  if (Number.isNaN(hour)) return value;
+  const hour12 = hour % 12 || 12;
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minute} ${suffix}`;
+}
 
 export default function PCODResults() {
   const { assessmentId } = useParams();
@@ -34,11 +57,12 @@ export default function PCODResults() {
   const [slots, setSlots] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [doctorNotice, setDoctorNotice] = useState('');
 
-  const showToast = (msg, type = 'success') => {
+  const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
-  };
+  }, []);
 
   /* Load report */
   useEffect(() => {
@@ -53,18 +77,30 @@ export default function PCODResults() {
         showToast('Failed to load report', 'error');
       } finally { setLoading(false); }
     })();
-  }, [assessmentId]);
+  }, [assessmentId, navigate, report, showToast]);
 
   /* Find nearby doctors */
   const findDoctors = useCallback(async () => {
     setLoadingDocs(true);
+    setDoctorNotice('');
     try {
-      if (!navigator.geolocation) return;
+      if (!navigator.geolocation) {
+        setDoctorNotice('Geolocation is not available in this browser.');
+        return;
+      }
       const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }));
-      const specialty = report?.recommended_specialist || 'Gynecologist';
-      const r = await doctorAPI.findNearby(pos.coords.latitude, pos.coords.longitude, specialty, 5000, 'PCOD PCOS women health');
-      setDoctors(r.doctors || []);
-    } catch { setDoctors([]); }
+      const specialty = getSpecialtyKey(report?.recommended_specialist);
+      const keyword = 'PCOD PCOS women health gynecologist endocrinologist';
+      const r = await doctorAPI.findNearby(pos.coords.latitude, pos.coords.longitude, specialty, 10000, keyword);
+      const matches = r.results || r.doctors || [];
+      setDoctors(matches);
+      if (matches.length === 0) {
+        setDoctorNotice('No nearby specialists were found. Try the Doctors page with a wider radius.');
+      }
+    } catch (e) {
+      setDoctors([]);
+      setDoctorNotice(e?.message || 'Location access denied. Enable location for doctor recommendations.');
+    }
     finally { setLoadingDocs(false); }
   }, [report]);
 
@@ -82,9 +118,9 @@ export default function PCODResults() {
     setBookDate(date);
     try {
       const r = await appointmentAPI.getSlots(date, bookingDoc?.name);
-      setSlots(r.slots || r.available_slots || ['10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM']);
+      setSlots(r.slots?.length ? r.slots : (r.available_slots?.length ? r.available_slots : FALLBACK_SLOTS));
     } catch {
-      setSlots(['10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM']);
+      setSlots(FALLBACK_SLOTS);
     }
   };
 
@@ -94,12 +130,14 @@ export default function PCODResults() {
     try {
       await appointmentAPI.create({
         doctor_name: bookingDoc?.name || 'Specialist',
-        doctor_address: bookingDoc?.address || '',
-        specialty: report?.recommended_specialist || 'Gynecologist',
+        doctor_specialty: getSpecialtyLabel(report?.recommended_specialist),
+        hospital_name: bookingDoc?.name || 'Clinic',
+        hospital_address: bookingDoc?.address || '',
+        hospital_place_id: bookingDoc?.place_id,
         appointment_date: bookDate,
         appointment_time: bookSlot,
         consultation_type: 'in-person',
-        reason: 'PCOD/PCOS assessment follow-up',
+        notes: 'PCOD/PCOS assessment follow-up',
       });
       showToast('Appointment booked successfully!');
       setBookingDoc(null);
@@ -295,20 +333,27 @@ export default function PCODResults() {
             <p style={{ marginTop: '.5rem', fontSize: '.82rem' }}>Finding specialists...</p>
           </div>
         ) : doctors.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '.82rem', padding: '2rem' }}>
-            Enable location to see nearby specialists.
-          </p>
+          <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '.82rem', padding: '2rem' }}>
+            <p>{doctorNotice || 'Enable location to see nearby specialists.'}</p>
+            <button
+              className="skinr-book-btn"
+              style={{ margin: '1rem auto 0', maxWidth: 180 }}
+              onClick={findDoctors}
+            >
+              <MapPin size={14} /> Use My Location
+            </button>
+          </div>
         ) : (
           <div className="skinr-doctors-grid">
             {doctors.slice(0, 6).map((doc, i) => (
-              <div key={i} className="skinr-doctor-card">
+              <div key={doc.place_id || i} className="skinr-doctor-card">
                 <div className="skinr-doctor-top">
                   <div className="skinr-doctor-avatar">
                     <Stethoscope size={18} />
                   </div>
                   <div className="skinr-doctor-info">
                     <h4>{doc.name}</h4>
-                    <p className="skinr-doctor-specialty">{report?.recommended_specialist || 'Gynecologist'}</p>
+                    <p className="skinr-doctor-specialty">{getSpecialtyLabel(report?.recommended_specialist)}</p>
                   </div>
                 </div>
                 <div className="skinr-doctor-meta">
@@ -317,18 +362,31 @@ export default function PCODResults() {
                       <Star size={12} /> {doc.rating}
                     </span>
                   )}
-                  {doc.is_open !== undefined && (
-                    <span className={`skinr-doctor-status ${doc.is_open ? 'skinr-open' : 'skinr-closed'}`}>
-                      {doc.is_open ? 'Open' : 'Closed'}
+                  {doc.is_open_now !== undefined && (
+                    <span className={`skinr-doctor-status ${doc.is_open_now ? 'skinr-open' : 'skinr-closed'}`}>
+                      {doc.is_open_now ? 'Open' : 'Closed'}
                     </span>
                   )}
                 </div>
                 {doc.address && (
                   <p className="skinr-doctor-address"><MapPin size={12} /> {doc.address}</p>
                 )}
-                <button className="skinr-book-btn" onClick={() => openBooking(doc)}>
-                  <Calendar size={14} /> Book Appointment
-                </button>
+                <div className="skinr-doctor-actions">
+                  <button className="skinr-book-btn" onClick={() => openBooking(doc)}>
+                    <Calendar size={14} /> Book Appointment
+                  </button>
+                  {doc.place_id && (
+                    <a
+                      className="skinr-map-link"
+                      href={`https://www.google.com/maps/place/?q=place_id:${doc.place_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="View on Maps"
+                    >
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -357,15 +415,20 @@ export default function PCODResults() {
                 <>
                   <label className="skinr-booking-label">Available Slots</label>
                   <div className="skinr-slots-grid">
-                    {slots.map((s, i) => (
-                      <button
-                        key={i}
-                        className={`skinr-slot-btn ${bookSlot === s ? 'skinr-slot-active' : ''}`}
-                        onClick={() => setBookSlot(s)}
-                      >
-                        <Clock size={12} /> {s}
-                      </button>
-                    ))}
+                    {slots.map((s, i) => {
+                      const value = typeof s === 'string' ? s : s?.time;
+                      const available = typeof s === 'string' ? true : s?.available !== false;
+                      return (
+                        <button
+                          key={value || i}
+                          className={`skinr-slot-btn ${bookSlot === value ? 'skinr-slot-active' : ''} ${!available ? 'skinr-slot-unavail' : ''}`}
+                          disabled={!available}
+                          onClick={() => setBookSlot(value)}
+                        >
+                          <Clock size={12} /> {formatSlotLabel(s)}
+                        </button>
+                      );
+                    })}
                   </div>
                 </>
               )}

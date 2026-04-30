@@ -40,9 +40,11 @@
 .pcod-toggle-row{display:flex;gap:.5rem}
 .pcod-toggle-card{flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;padding:.6rem 1rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#fafbfd;font-size:.82rem;font-weight:600;color:#64748b;cursor:pointer;transition:.2s}
 .pcod-toggle-card:hover{border-color:#d8b4fe;background:#faf5ff}
+.pcod-toggle-card:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(168,85,247,.16)}
 .pcod-toggle-card svg{flex-shrink:0}
 .pcod-toggle-yes{border-color:#a855f7;background:#faf5ff;color:#7c3aed}
-.pcod-toggle-no{border-color:#e2e8f0;background:#fff;color:#64748b}
+.pcod-toggle-no{border-color:#f87171;background:#fef2f2;color:#dc2626;box-shadow:0 0 0 3px rgba(248,113,113,.1)}
+.pcod-toggle-no:hover{border-color:#ef4444;background:#fee2e2;color:#b91c1c}
 
 /* Select & Input */
 .pcod-select{width:100%;max-width:320px;border:1.5px solid #e2e8f0;border-radius:10px;padding:.55rem .75rem;font-size:.82rem;outline:none;background:#fff;font-family:inherit;transition:.2s}

@@ -70,10 +70,6 @@ const LOADING_STEPS = [
   'Preparing your report...',
 ];
 
-const RISK_COLORS = {
-  low: '#16a34a', medium: '#d97706', high: '#dc2626',
-};
-
 export default function PCODAssessment() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -110,7 +106,7 @@ export default function PCODAssessment() {
 
     const interval = setInterval(() => {
       setLoadStep(s => (s < LOADING_STEPS.length - 1 ? s + 1 : s));
-    }, 2500);
+    }, 700);
 
     try {
       const result = await pcodAPI.assess(form);

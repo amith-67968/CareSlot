@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { notificationAPI } from '../../services/api';
 import { Bell, Clock, Plus, X, Check, Loader2 } from 'lucide-react';
 
@@ -13,23 +13,23 @@ export default function Notifications(){
   const[form,setForm]=useState({title:'',description:'',reminder_type:'medicine',scheduled_at:'',recurrence:'none'});
   const[saving,setSaving]=useState(false);
 
-  useEffect(()=>{load();},[tab]);
-
-  const load=async()=>{
+  const load=useCallback(async()=>{
     setLoading(true);
     try{
       if(tab==='notifications'){const r=await notificationAPI.list();setNotifs(r.notifications||[]);}
       else{const r=await notificationAPI.listReminders();setReminders(r.reminders||[]);}
-    }catch{}finally{setLoading(false);}
-  };
+    }catch{ /* notification fetch is retryable from the tab controls */ }finally{setLoading(false);}
+  },[tab]);
 
-  const markRead=async(id)=>{try{await notificationAPI.markRead(id);load();}catch{}};
-  const cancelRem=async(id)=>{try{await notificationAPI.cancelReminder(id);load();}catch{}};
+  useEffect(()=>{load();},[load]);
+
+  const markRead=async(id)=>{try{await notificationAPI.markRead(id);load();}catch{ /* keep item visible if update fails */ }};
+  const cancelRem=async(id)=>{try{await notificationAPI.cancelReminder(id);load();}catch{ /* keep reminder visible if cancellation fails */ }};
 
   const createReminder=async(e)=>{
     e.preventDefault();setSaving(true);
     try{await notificationAPI.createReminder({...form,scheduled_at:new Date(form.scheduled_at).toISOString()});setShowForm(false);setTab('reminders');load();}
-    catch{}finally{setSaving(false);}
+    catch{ /* form remains open for retry */ }finally{setSaving(false);}
   };
 
   return(

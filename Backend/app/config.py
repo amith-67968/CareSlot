@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # --- Ollama ---
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.1:8b"
+    OLLAMA_NUM_CTX: int = 2048
+    OLLAMA_NUM_PREDICT: int = 450
+
+    # --- Performance ---
+    ENABLE_LLM_EXPLANATIONS: bool = False
+    ENABLE_PCOD_ZERO_SHOT: bool = False
+    FAST_CHAT_RESPONSES: bool = True
 
     # --- Google Maps ---
     GOOGLE_MAPS_API_KEY: str = ""

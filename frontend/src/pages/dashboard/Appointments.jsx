@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { appointmentAPI } from '../../services/api';
-import { CalendarCheck, Plus, X, Loader2, Clock, MapPin, Video, Phone, User } from 'lucide-react';
+import { CalendarCheck, Plus, X, Loader2, Clock, MapPin, Video, Phone } from 'lucide-react';
 
 const TYPE_ICONS = { 'in-person': MapPin, video: Video, phone: Phone };
 const STATUS_COLORS = { scheduled: '#3b82f6', completed: '#22c55e', cancelled: '#94a3b8', 'no-show': '#ef4444' };
@@ -17,13 +17,13 @@ export default function Appointments() {
     appointment_date: '', appointment_time: '', consultation_type: 'in-person', notes: '',
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try { const r = await appointmentAPI.list(filter || undefined); setAppts(r.appointments || []); }
     catch { setAppts([]); } finally { setLoading(false); }
-  };
+  }, [filter]);
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -39,7 +39,7 @@ export default function Appointments() {
 
   const cancel = async (id) => {
     if (!confirm('Cancel this appointment?')) return;
-    try { await appointmentAPI.cancel(id); load(); } catch { }
+    try { await appointmentAPI.cancel(id); load(); } catch { /* cancellation is non-blocking */ }
   };
 
   return (

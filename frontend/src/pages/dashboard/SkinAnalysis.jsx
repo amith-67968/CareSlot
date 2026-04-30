@@ -7,8 +7,8 @@ import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { skinAPI } from '../../services/api';
 import {
-  Upload, X, Loader2, Image as ImgIcon, Stethoscope, Clock,
-  CheckCircle2, Brain, MapPin, FileImage, Activity,
+  Upload, X, Loader2, Stethoscope, Clock,
+  CheckCircle2, Brain, FileImage, Activity,
   AlertTriangle, Thermometer, Zap, Flame, Hand, Droplets,
 } from 'lucide-react';
 
@@ -98,7 +98,7 @@ export default function SkinAnalysis() {
     // Simulate step progression
     const stepTimer = setInterval(() => {
       setLoadingStep((s) => (s < LOADING_STEPS.length - 1 ? s + 1 : s));
-    }, 2000);
+    }, 650);
 
     try {
       const symptomsData = {

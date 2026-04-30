@@ -17,7 +17,8 @@
 .pcod-toggle-row{display:flex;gap:.5rem}
 .pcod-toggle{padding:.45rem 1.2rem;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;font-size:.8rem;font-weight:600;color:#64748b;cursor:pointer;transition:.15s}
 .pcod-toggle-yes{background:#eff6ff;border-color:#3b82f6;color:#1d4ed8}
-.pcod-toggle-no{background:#fff;border-color:#e2e8f0;color:#64748b}
+.pcod-toggle-no{background:#fef2f2;border-color:#f87171;color:#dc2626;box-shadow:0 0 0 3px rgba(248,113,113,.1)}
+.pcod-toggle-no:hover{background:#fee2e2;border-color:#ef4444;color:#b91c1c}
 .pcod-select,.pcod-number-input{width:100%;max-width:260px;border:1.5px solid #e2e8f0;border-radius:10px;padding:.5rem .75rem;font-size:.82rem;outline:none;background:#fff}
 .pcod-select:focus,.pcod-number-input:focus{border-color:#3b82f6}
 .pcod-nav{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}

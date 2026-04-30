@@ -8,8 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { appointmentAPI } from '../../services/api';
 import {
-  CalendarCheck, ChevronRight, Clock, MapPin,
-  User, Plus, History,
+  CalendarCheck, ChevronRight, Plus, History,
 } from 'lucide-react';
 
 export default function Overview() {
@@ -80,7 +79,6 @@ export default function Overview() {
             </div>
           ) : (
             upcoming.map((a) => {
-              const dt = new Date(a.appointment_date);
               const timeStr = a.appointment_time || '';
               const [h, m] = timeStr.split(':');
               const hour12 = h ? (parseInt(h) % 12 || 12) : '';
@@ -170,4 +168,3 @@ export default function Overview() {
     </div>
   );
 }
-

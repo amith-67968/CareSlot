@@ -4,6 +4,7 @@ Uses HuggingFace zero-shot classification for hormonal health risk assessment.
 """
 
 from typing import Dict, Any, List
+from app.config import get_settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -154,26 +155,28 @@ async def assess_pcod_risk(questionnaire: Dict[str, Any]) -> Dict[str, Any]:
     risk_level = determine_risk_level(risk_score)
     flagged_conditions = get_flagged_conditions(questionnaire, risk_score)
 
-    # Run HuggingFace classification
-    symptom_text = build_symptom_text(questionnaire)
-    classifier = load_pcod_classifier()
+    # HuggingFace zero-shot classification is accurate but very slow on CPU.
+    # Keep it opt-in; the weighted rule-based assessment above is the fast path.
+    if get_settings().ENABLE_PCOD_ZERO_SHOT:
+        symptom_text = build_symptom_text(questionnaire)
+        classifier = load_pcod_classifier()
 
-    try:
-        classification = classifier(symptom_text, CONDITION_LABELS, multi_label=True)
-        # Merge HF results with rule-based assessment
-        hf_conditions = [
-            label for label, score in zip(classification["labels"], classification["scores"])
-            if score > 0.4 and "Normal" not in label
-        ]
+        try:
+            classification = classifier(symptom_text, CONDITION_LABELS, multi_label=True)
+            # Merge HF results with rule-based assessment
+            hf_conditions = [
+                label for label, score in zip(classification["labels"], classification["scores"])
+                if score > 0.4 and "Normal" not in label
+            ]
 
-        # Combine and deduplicate
-        for cond in hf_conditions:
-            short_name = cond.split("(")[-1].rstrip(")") if "(" in cond else cond
-            if short_name not in flagged_conditions and cond not in flagged_conditions:
-                flagged_conditions.append(short_name)
+            # Combine and deduplicate
+            for cond in hf_conditions:
+                short_name = cond.split("(")[-1].rstrip(")") if "(" in cond else cond
+                if short_name not in flagged_conditions and cond not in flagged_conditions:
+                    flagged_conditions.append(short_name)
 
-    except Exception as e:
-        logger.error(f"HuggingFace classification error: {e}")
+        except Exception as e:
+            logger.error(f"HuggingFace classification error: {e}")
 
     # Build key indicators
     key_indicators = [

@@ -8,7 +8,9 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.documents import Document
 from app.ai.llm import get_llm
 from app.ai.rag import get_retriever
+from app.config import get_settings
 from typing import List, Dict, Any
+from functools import lru_cache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,6 +19,12 @@ EMERGENCY_TERMS = [
     "chest pain", "chest tightness", "difficulty breathing", "shortness of breath",
     "can't breathe", "cant breathe", "stroke", "fainting", "unconscious",
     "severe bleeding", "seizure", "blue lips",
+]
+
+COMMON_FAST_TERMS = [
+    "fever", "headache", "rash", "itching", "cough", "cold", "sore throat",
+    "pcod", "pcos", "irregular period", "irregular periods", "acne",
+    "facial hair", "hair thinning", "weight gain",
 ]
 
 
@@ -115,11 +123,18 @@ def _format_docs(docs: List[Document]) -> str:
     """Format retrieved documents into context string."""
     if not docs:
         return "No specific medical knowledge context available."
-    return "\n\n---\n\n".join(doc.page_content for doc in docs)
+    return "\n\n---\n\n".join(doc.page_content[:900] for doc in docs)
 
 
 def _retrieve_context(query: str, k: int = 5) -> str:
     """Retrieve RAG context, but never let retrieval failure block guidance."""
+    normalized = " ".join((query or "").lower().split())[:240]
+    return _retrieve_context_cached(normalized, k)
+
+
+@lru_cache(maxsize=256)
+def _retrieve_context_cached(query: str, k: int = 5) -> str:
+    """Cached RAG retrieval for repeated common symptom questions."""
     try:
         retriever = get_retriever(k=k)
         return _format_docs(retriever.invoke(query))
@@ -186,6 +201,51 @@ def _rule_based_health_fallback(message: str) -> Dict[str, Any]:
             "is_structured": True,
         }
 
+    if any(term in text for term in ["rash", "itching", "skin rash", "redness"]):
+        return {
+            "summary": "Skin rashes can come from allergy, irritation, infection, heat, or inflammatory skin conditions. Watch for spreading, pain, fever, or pus.",
+            "prediction": "Possible allergic rash, dermatitis, infection, or other skin irritation",
+            "risk_level": "medium" if any(term in text for term in ["fever", "pus", "pain", "swelling"]) else "low",
+            "precautions": [
+                "Avoid scratching the area",
+                "Keep the area clean and dry",
+                "Avoid new creams, fragrances, or harsh products",
+                "Seek care quickly if redness spreads, pain worsens, or fever appears",
+            ],
+            "home_remedies": ["Cool compress", "Gentle fragrance-free moisturizer", "Loose breathable clothing"],
+            "recommended_specialist": "Dermatologist",
+            "next_steps": ["Consult a dermatologist if it persists, spreads, or becomes painful"],
+            "is_structured": True,
+        }
+
+    if any(term in text for term in ["pcod", "pcos", "irregular period", "irregular periods", "facial hair"]):
+        return {
+            "summary": "Irregular periods, acne, facial hair growth, weight changes, or fatigue can be linked with PCOD/PCOS or other hormonal issues. A screening can guide next steps, but confirmation needs a clinician.",
+            "prediction": "Possible PCOD/PCOS or hormonal imbalance",
+            "risk_level": "medium",
+            "precautions": [
+                "Track cycle dates and symptoms",
+                "Maintain regular meals, sleep, and physical activity",
+                "Avoid self-medicating with hormonal tablets",
+            ],
+            "home_remedies": ["Balanced high-fiber meals", "Regular moderate exercise", "Stress management"],
+            "recommended_specialist": "Gynecologist / Endocrinologist",
+            "next_steps": ["Consider the PCOD/PCOS assessment", "Ask a clinician about hormonal, thyroid, and glucose tests"],
+            "is_structured": True,
+        }
+
+    if any(term in text for term in ["cough", "cold", "sore throat", "runny nose"]):
+        return {
+            "summary": "Cough, cold, and sore throat symptoms are often viral, but persistent fever, breathing trouble, or worsening symptoms need medical care.",
+            "prediction": "Possible viral upper respiratory infection, allergy, or throat irritation",
+            "risk_level": "low",
+            "precautions": ["Rest", "Hydrate", "Avoid smoke and dust", "Use a mask around others if infectious symptoms are present"],
+            "home_remedies": ["Warm fluids", "Salt-water gargle", "Steam inhalation if comfortable"],
+            "recommended_specialist": "General Physician",
+            "next_steps": ["Consult a doctor if symptoms last more than a few days, worsen, or include breathing difficulty"],
+            "is_structured": True,
+        }
+
     return {
         "summary": (
             "I could not complete the AI analysis right now, but your symptoms still deserve attention. "
@@ -226,6 +286,68 @@ def _apply_emergency_guardrails(result: Dict[str, Any], message: str) -> Dict[st
     return result
 
 
+def _quick_conversation_response(message: str) -> Dict[str, Any] | None:
+    """Return instant responses for simple/common chat messages."""
+    text = " ".join((message or "").lower().split())
+    if not text:
+        return None
+
+    greetings = {"hi", "hello", "hey", "good morning", "good afternoon", "good evening"}
+    if text in greetings:
+        return {
+            "summary": "Hi, I am CareSlot AI. Tell me your symptoms, duration, and severity, and I can give preliminary guidance.",
+            "prediction": None,
+            "risk_level": None,
+            "precautions": [],
+            "home_remedies": [],
+            "recommended_specialist": None,
+            "next_steps": [],
+            "is_structured": False,
+        }
+
+    if text in {"thanks", "thank you", "ok", "okay"}:
+        return {
+            "summary": "You are welcome. Keep monitoring your symptoms, and seek medical care if anything worsens.",
+            "prediction": None,
+            "risk_level": None,
+            "precautions": [],
+            "home_remedies": [],
+            "recommended_specialist": None,
+            "next_steps": [],
+            "is_structured": False,
+        }
+
+    if "what is pcod" in text or "what is pcos" in text:
+        return {
+            "summary": "PCOD/PCOS are hormone-related conditions that can affect ovulation and menstrual cycles. Common signs include irregular periods, acne, weight changes, facial hair growth, and sometimes insulin resistance. A gynecologist or endocrinologist can confirm with history, examination, blood tests, and ultrasound when needed.",
+            "prediction": None,
+            "risk_level": None,
+            "precautions": [],
+            "home_remedies": [],
+            "recommended_specialist": "Gynecologist / Endocrinologist",
+            "next_steps": ["Use the PCOD/PCOS assessment if you have symptoms", "Consult a clinician for confirmation and treatment"],
+            "is_structured": True,
+        }
+
+    if any(term in text for term in EMERGENCY_TERMS + COMMON_FAST_TERMS):
+        return _rule_based_health_fallback(text)
+
+    return None
+
+
+def _quick_symptom_analysis(symptoms: str, additional_context: str = "") -> Dict[str, Any] | None:
+    """Instant structured analysis for common symptom patterns."""
+    text = f"{symptoms} {additional_context}".lower()
+    if any(term in text for term in EMERGENCY_TERMS + COMMON_FAST_TERMS):
+        result = _rule_based_health_fallback(text)
+        return {key: result[key] for key in (
+            "prediction", "risk_level", "precautions", "home_remedies",
+            "recommended_specialist", "next_steps",
+        )}
+    return None
+
+
+@lru_cache()
 def get_symptom_analysis_chain():
     """
     Build the symptom analysis chain using RAG.
@@ -236,7 +358,7 @@ def get_symptom_analysis_chain():
 
     chain = (
         {
-            "context": lambda x: _retrieve_context(x["symptoms"], k=5),
+            "context": lambda x: _retrieve_context(x["symptoms"], k=2),
             "symptoms": lambda x: x["symptoms"],
             "additional_context": lambda x: x.get("additional_context", "None provided"),
         }
@@ -248,6 +370,7 @@ def get_symptom_analysis_chain():
     return chain
 
 
+@lru_cache()
 def get_conversation_chain():
     """
     Build the multi-turn conversation chain with RAG context.
@@ -257,7 +380,7 @@ def get_conversation_chain():
 
     chain = (
         {
-            "context": lambda x: _retrieve_context(x["message"], k=3),
+            "context": lambda x: _retrieve_context(x["message"], k=1),
             "chat_history": lambda x: x.get("chat_history", []),
             "message": lambda x: x["message"],
         }
@@ -269,6 +392,7 @@ def get_conversation_chain():
     return chain
 
 
+@lru_cache()
 def get_skin_analysis_chain():
     """
     Build the skin disease analysis chain.
@@ -300,6 +424,11 @@ async def run_symptom_analysis(
         Structured analysis result dict.
     """
     try:
+        if get_settings().FAST_CHAT_RESPONSES:
+            quick = _quick_symptom_analysis(symptoms, additional_context)
+            if quick:
+                return quick
+
         chain = get_symptom_analysis_chain()
         result = await chain.ainvoke({
             "symptoms": symptoms,
@@ -347,6 +476,11 @@ async def run_conversation(
         Structured analysis result dict.
     """
     try:
+        if get_settings().FAST_CHAT_RESPONSES:
+            quick = _quick_conversation_response(message)
+            if quick:
+                return quick
+
         chain = get_conversation_chain()
 
         result = await chain.ainvoke({
@@ -460,6 +594,7 @@ Respond ONLY with valid JSON."""),
 ])
 
 
+@lru_cache()
 def get_pcod_analysis_chain():
     """Build the PCOD analysis chain."""
     llm = get_llm()

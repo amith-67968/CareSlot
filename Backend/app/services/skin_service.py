@@ -7,6 +7,7 @@ from app.ai.skin_model import predict_skin_disease
 from app.ai.chains import run_skin_analysis
 from app.services.supabase_service import SupabaseService
 from app.models.skin import SkinSymptomsInput
+from app.config import get_settings
 from typing import Dict, Any, Optional
 import uuid
 import logging
@@ -66,12 +67,15 @@ class SkinService:
         symptoms_text = self._build_symptoms_text(symptoms)
         symptoms_summary = self._symptoms_to_list(symptoms)
 
-        # 4. Run combined analysis via LLM
-        llm_result = await run_skin_analysis(
-            model_prediction=model_result["predicted_condition"],
-            confidence=model_result["confidence"],
-            symptoms_text=symptoms_text,
-        )
+        # 4. Build combined analysis. Deterministic guidance is fast and is the
+        # default; local LLM explanations can be enabled when richer text matters.
+        llm_result = self._build_fast_skin_analysis(model_result, symptoms_summary, symptoms_text)
+        if get_settings().ENABLE_LLM_EXPLANATIONS:
+            llm_result = await run_skin_analysis(
+                model_prediction=model_result["predicted_condition"],
+                confidence=model_result["confidence"],
+                symptoms_text=symptoms_text,
+            )
 
         # 5. Store prediction result
         prediction_data = {
@@ -243,3 +247,66 @@ class SkinService:
         """Map risk level back to severity."""
         mapping = {"low": "mild", "medium": "moderate", "high": "severe"}
         return mapping.get(risk, "moderate")
+
+    def _build_fast_skin_analysis(
+        self,
+        model_result: Dict[str, Any],
+        symptoms_summary: list,
+        symptoms_text: str,
+    ) -> Dict[str, Any]:
+        """Generate a useful skin report without waiting on an LLM."""
+        condition = model_result["predicted_condition"]
+        confidence = model_result["confidence"] * 100
+        severity = model_result["severity"]
+        urgent = model_result.get("is_urgent", False)
+
+        if severity == "severe":
+            urgency = "high"
+            urgency_text = "This class can require prompt dermatologist review."
+        elif severity == "moderate" or any(s in symptoms_summary for s in ["pain", "fever", "swelling"]):
+            urgency = "medium"
+            urgency_text = "A clinician review is recommended, especially if symptoms are spreading or painful."
+        else:
+            urgency = "low"
+            urgency_text = "This often can be monitored, but a dermatologist should confirm it."
+
+        assessment = (
+            f"The image model's top match is {condition} with {confidence:.1f}% confidence. "
+            f"Reported details: {symptoms_text} {urgency_text} "
+            "This is not a diagnosis; skin conditions can look similar, so use this as preliminary guidance only."
+        )
+
+        precautions = [
+            "Avoid scratching or picking the area",
+            "Keep the area clean and dry",
+            "Use sunscreen or cover the area when outdoors",
+        ]
+        if urgent:
+            precautions.insert(0, "Arrange a dermatologist appointment as soon as possible")
+        if "fever" in symptoms_summary or "swelling" in symptoms_summary:
+            precautions.append("Seek care quickly if fever, swelling, warmth, or pus develops")
+
+        return {
+            "combined_assessment": assessment,
+            "severity_level": severity,
+            "urgency_level": urgency,
+            "possible_causes": [
+                "Sun exposure or UV-related skin change",
+                "Inflammation or irritation",
+                "Benign or malignant skin lesion pattern requiring clinical confirmation",
+            ],
+            "precautions": precautions,
+            "home_remedies": [
+                "Apply a cool compress for irritation",
+                "Use a gentle fragrance-free moisturizer",
+                "Avoid new harsh skincare products until reviewed",
+            ],
+            "recommended_specialist": "Dermatologist",
+            "next_steps": [
+                "Book a dermatologist consultation for confirmation",
+                "Take a clear follow-up photo if the area changes",
+                "Seek urgent care for rapid growth, bleeding, severe pain, fever, or spreading redness",
+            ],
+            "urgent": urgent,
+            "doctor_consultation_needed": True,
+        }

@@ -3,7 +3,7 @@
  * Slide-out panel with user info, history tabs, and logout.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { profileAPI, appointmentAPI, chatAPI } from '../services/api';
 import {
@@ -22,11 +22,7 @@ export default function ProfilePopup({ onClose, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [profileData, apptData] = await Promise.allSettled([
@@ -63,7 +59,11 @@ export default function ProfilePopup({ onClose, onLogout }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleSave = async () => {
     setSaving(true);

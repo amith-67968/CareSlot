@@ -51,7 +51,7 @@ class DoctorService:
         params = {
             "location": f"{latitude},{longitude}",
             "radius": radius,
-            "type": "hospital|doctor|health",
+            "type": "hospital" if specialty == "emergency" else "doctor",
             "keyword": search_keyword,
             "key": self.settings.GOOGLE_MAPS_API_KEY,
         }

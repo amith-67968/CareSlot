@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 from langchain_core.messages import HumanMessage, AIMessage
 import uuid
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +129,7 @@ class ChatService:
         try:
             # Load chat history for this session
             chat_history = await self._get_session_messages(user_id, session_id)
+            chat_history = chat_history[-6:]
 
             # Convert to LangChain message objects
             lc_history = []
@@ -162,7 +164,8 @@ class ChatService:
         # Fetch nearby doctors if location provided and specialist recommended
         nearby_doctors = []
         specialist = ai_result.get("recommended_specialist")
-        if latitude is not None and longitude is not None and specialist:
+        risk_level = ai_result.get("risk_level")
+        if latitude is not None and longitude is not None and specialist and risk_level in {"high", "critical"}:
             try:
                 specialty_key = _resolve_specialty(specialist)
                 doctor_results = await self.doctor_service.find_nearby(
@@ -186,23 +189,8 @@ class ChatService:
             except Exception as e:
                 logger.error(f"Doctor search failed: {e}")
 
-        # Store messages
-        try:
-            self.supabase.insert("chatbot_history", {
-                "user_id": user_id,
-                "session_id": session_id,
-                "role": "user",
-                "message": message,
-            })
-            self.supabase.insert("chatbot_history", {
-                "user_id": user_id,
-                "session_id": session_id,
-                "role": "assistant",
-                "message": response_text,
-                "metadata": ai_result,
-            })
-        except Exception as e:
-            logger.error(f"Failed to store chat message: {e}")
+        # Store messages after responding so Supabase writes do not slow chat.
+        asyncio.create_task(self._store_chat_pair(user_id, session_id, message, response_text, ai_result))
 
         return {
             "response": response_text,
@@ -249,11 +237,38 @@ class ChatService:
     async def _get_session_messages(self, user_id: str, session_id: str) -> List[dict]:
         """Get all messages for a specific chat session."""
         try:
-            return self.supabase.select(
+            messages = self.supabase.select(
                 "chatbot_history",
                 filters={"user_id": user_id, "session_id": session_id},
-                order_by="created_at",
+                order_by="-created_at",
+                limit=8,
             )
+            return list(reversed(messages))
         except Exception:
             return []
 
+    async def _store_chat_pair(
+        self,
+        user_id: str,
+        session_id: str,
+        user_message: str,
+        response_text: str,
+        metadata: Dict[str, Any],
+    ) -> None:
+        """Persist chat messages in the background."""
+        try:
+            await asyncio.to_thread(self.supabase.insert, "chatbot_history", {
+                "user_id": user_id,
+                "session_id": session_id,
+                "role": "user",
+                "message": user_message,
+            })
+            await asyncio.to_thread(self.supabase.insert, "chatbot_history", {
+                "user_id": user_id,
+                "session_id": session_id,
+                "role": "assistant",
+                "message": response_text,
+                "metadata": metadata,
+            })
+        except Exception as e:
+            logger.error(f"Failed to store chat message: {e}")

@@ -29,9 +29,11 @@ def get_llm() -> ChatOllama:
         base_url=settings.OLLAMA_BASE_URL,
         temperature=0.3,
         top_p=0.9,
-        num_ctx=4096,
+        num_ctx=settings.OLLAMA_NUM_CTX,
+        num_predict=settings.OLLAMA_NUM_PREDICT,
         repeat_penalty=1.1,
-        timeout=120,  # Allow enough time for cold-start model loading
+        format="json",
+        keep_alive="10m",
     )
 
     return llm
@@ -49,8 +51,9 @@ def get_creative_llm() -> ChatOllama:
         base_url=settings.OLLAMA_BASE_URL,
         temperature=0.6,
         top_p=0.95,
-        num_ctx=4096,
-        timeout=120,
+        num_ctx=settings.OLLAMA_NUM_CTX,
+        num_predict=settings.OLLAMA_NUM_PREDICT,
+        keep_alive="10m",
     )
 
 

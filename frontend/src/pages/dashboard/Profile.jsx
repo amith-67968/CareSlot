@@ -14,8 +14,8 @@ export default function Profile(){
   const[newCond,setNewCond]=useState({condition_name:'',status:'active',notes:''});
 
   useEffect(()=>{
-    profileAPI.get().then(d=>{setProfile(d);setForm(d);}).catch(()=>{});
-    profileAPI.getMedicalHistory().then(d=>setMedHist(Array.isArray(d)?d:[])).catch(()=>{});
+    profileAPI.get().then(d=>{setProfile(d);setForm(d);}).catch(()=>{ /* profile can be retried by revisiting */ });
+    profileAPI.getMedicalHistory().then(d=>setMedHist(Array.isArray(d)?d:[])).catch(()=>{ /* optional section */ });
   },[]);
 
   const set=(k,v)=>setForm(p=>({...p,[k]:v}));
@@ -23,12 +23,12 @@ export default function Profile(){
   const saveProfile=async()=>{
     setSaving(true);
     try{const r=await profileAPI.update({full_name:form.full_name,phone:form.phone,date_of_birth:form.date_of_birth,gender:form.gender,blood_group:form.blood_group});setProfile(r);setEditing(false);}
-    catch{}finally{setSaving(false);}
+    catch{ /* keep edit mode active for retry */ }finally{setSaving(false);}
   };
 
   const addCondition=async(e)=>{
     e.preventDefault();
-    try{await profileAPI.addMedicalHistory(newCond);const r=await profileAPI.getMedicalHistory();setMedHist(Array.isArray(r)?r:[]);setShowAdd(false);setNewCond({condition_name:'',status:'active',notes:''});}catch{}
+    try{await profileAPI.addMedicalHistory(newCond);const r=await profileAPI.getMedicalHistory();setMedHist(Array.isArray(r)?r:[]);setShowAdd(false);setNewCond({condition_name:'',status:'active',notes:''});}catch{ /* form remains open for retry */ }
   };
 
   return(

@@ -5,6 +5,7 @@ Orchestrates PCOD/PCOS risk assessment with HuggingFace + Ollama LLM.
 
 from app.ai.pcod_model import assess_pcod_risk, build_symptom_text
 from app.services.supabase_service import SupabaseService
+from app.config import get_settings
 from typing import Dict, Any, Optional
 import logging
 
@@ -25,31 +26,21 @@ class PCODService:
         hf_result = await assess_pcod_risk(questionnaire)
 
         # 2. Run Ollama LLM for explanation (optional — graceful failure)
-        llm_result = {}
-        try:
-            from app.ai.chains import run_pcod_analysis
-            symptoms_text = build_symptom_text(questionnaire)
-            llm_result = await run_pcod_analysis(
-                risk_level=hf_result["risk_level"],
-                risk_score=hf_result["risk_score"],
-                conditions_flagged=hf_result["conditions_flagged"],
-                key_indicators=hf_result["key_indicators"],
-                symptoms_text=symptoms_text,
-            )
-        except Exception as e:
-            logger.warning(f"Ollama LLM analysis skipped: {e}")
-            llm_result = {
-                "combined_assessment": "AI explanation is temporarily unavailable. Please consult a specialist for detailed guidance.",
-                "urgency_level": hf_result["risk_level"],
-                "possible_causes": [],
-                "lifestyle_recommendations": [],
-                "dietary_suggestions": [],
-                "exercise_recommendations": [],
-                "hormonal_insights": "",
-                "fertility_note": "",
-                "doctor_consultation_needed": hf_result["risk_level"] in ("medium", "high"),
-                "urgent": hf_result["risk_level"] == "high",
-            }
+        symptoms_text = build_symptom_text(questionnaire)
+        llm_result = _build_fast_pcod_guidance(hf_result, symptoms_text)
+
+        if get_settings().ENABLE_LLM_EXPLANATIONS:
+            try:
+                from app.ai.chains import run_pcod_analysis
+                llm_result = await run_pcod_analysis(
+                    risk_level=hf_result["risk_level"],
+                    risk_score=hf_result["risk_score"],
+                    conditions_flagged=hf_result["conditions_flagged"],
+                    key_indicators=hf_result["key_indicators"],
+                    symptoms_text=symptoms_text,
+                )
+            except Exception as e:
+                logger.warning(f"Ollama LLM analysis skipped: {e}")
 
         # 3. Store assessment in database
         assessment_data = {
@@ -158,3 +149,73 @@ class PCODService:
             })
 
         return {"assessments": items, "total": len(items)}
+
+
+def _build_fast_pcod_guidance(hf_result: Dict[str, Any], symptoms_text: str) -> Dict[str, Any]:
+    """Generate PCOD/PCOS report details without waiting on an LLM."""
+    risk_level = hf_result["risk_level"]
+    risk_score = hf_result["risk_score"]
+    conditions = hf_result.get("conditions_flagged", [])
+    indicators = hf_result.get("key_indicators", [])
+
+    condition_text = ", ".join(conditions) if conditions else "no major condition pattern"
+    indicator_text = ", ".join(indicators[:4]) if indicators else "the answers provided"
+
+    if risk_level == "high":
+        urgency = "high"
+        opening = "Your answers show a high PCOD/PCOS-related risk pattern."
+    elif risk_level == "medium":
+        urgency = "medium"
+        opening = "Your answers show a moderate PCOD/PCOS-related risk pattern."
+    else:
+        urgency = "low"
+        opening = "Your answers currently suggest a lower PCOD/PCOS-related risk pattern."
+
+    combined = (
+        f"{opening} The score is {risk_score * 100:.1f}%, with {condition_text} flagged. "
+        f"The main indicators considered were {indicator_text}. {symptoms_text} "
+        "This screening cannot diagnose PCOD or PCOS, but it can help you decide what to discuss "
+        "with a gynecologist or endocrinologist."
+    )
+
+    causes = [
+        "Hormonal imbalance involving androgens",
+        "Insulin resistance or blood sugar regulation issues",
+        "Family history and genetic tendency",
+    ]
+    if "Thyroid Risk" in conditions:
+        causes.append("Possible thyroid hormone imbalance")
+    if not conditions:
+        causes = ["Lifestyle, stress, sleep, or temporary hormonal variation"]
+
+    return {
+        "combined_assessment": combined,
+        "urgency_level": urgency,
+        "possible_causes": causes,
+        "lifestyle_recommendations": [
+            "Track menstrual cycle patterns and symptoms",
+            "Keep a consistent sleep schedule",
+            "Manage stress with breathing exercises, yoga, or light activity",
+        ],
+        "dietary_suggestions": [
+            "Prefer high-fiber meals with vegetables, pulses, and whole grains",
+            "Limit refined sugar and highly processed foods",
+            "Include lean protein with meals to support steady energy",
+        ],
+        "exercise_recommendations": [
+            "Aim for 30 minutes of moderate activity most days",
+            "Add strength training 2-3 times per week if comfortable",
+            "Start gently if fatigue or pelvic discomfort is present",
+        ],
+        "hormonal_insights": (
+            "PCOD/PCOS symptoms can be linked with androgen levels, ovulation patterns, insulin resistance, "
+            "and sometimes thyroid function. Blood tests and clinical evaluation are needed to confirm causes."
+        ),
+        "fertility_note": (
+            "Cycle irregularity can affect ovulation, but many people manage symptoms well with medical guidance."
+            if risk_level in ("medium", "high") else
+            "Not applicable"
+        ),
+        "doctor_consultation_needed": risk_level in ("medium", "high"),
+        "urgent": risk_level == "high",
+    }

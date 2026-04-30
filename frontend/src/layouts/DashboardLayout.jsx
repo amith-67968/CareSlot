@@ -32,7 +32,6 @@ export default function DashboardLayout() {
   };
 
   const initial = (user?.email || 'U').charAt(0).toUpperCase();
-  const userName = user?.full_name || user?.email?.split('@')[0] || 'User';
 
   return (
     <div className="dash-layout">

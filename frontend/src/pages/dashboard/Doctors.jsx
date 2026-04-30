@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { doctorAPI } from '../../services/api';
-import { MapPin, Star, Phone, Globe, Clock, Search, Loader2, Navigation } from 'lucide-react';
+import { MapPin, Star, Phone, Globe, Search, Loader2, Navigation } from 'lucide-react';
 
 export default function Doctors(){
   const[results,setResults]=useState([]);

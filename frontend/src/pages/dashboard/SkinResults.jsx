@@ -7,10 +7,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { skinAPI, doctorAPI, appointmentAPI } from '../../services/api';
 import {
-  ArrowLeft, Stethoscope, Shield, AlertTriangle, CheckCircle2,
+  ArrowLeft, Shield, AlertTriangle, CheckCircle2,
   MapPin, Star, ExternalLink, X, Loader2, Calendar, Clock,
-  FileText, Activity, Pill, Footprints, Brain, Phone, Video,
-  User, Building2, CalendarCheck,
+  Activity, Pill, Footprints, Brain,
+  Building2, CalendarCheck,
 } from 'lucide-react';
 
 const SEV = {
