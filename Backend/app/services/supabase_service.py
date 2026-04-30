@@ -3,9 +3,10 @@ CareSlot — Supabase Service
 Singleton wrapper for Supabase client operations.
 """
 
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
 from app.config import get_settings
 from typing import Optional, Any, Dict, List
+import httpx
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,14 @@ class SupabaseService:
 
     _client: Optional[Client] = None
     _admin_client: Optional[Client] = None
+    _http_client: Optional[httpx.Client] = None
+
+    @classmethod
+    def _get_http_client(cls) -> httpx.Client:
+        """Use a direct HTTP client so local proxy env vars cannot break Supabase."""
+        if cls._http_client is None:
+            cls._http_client = httpx.Client(trust_env=False)
+        return cls._http_client
 
     @classmethod
     def _get_client(cls) -> Client:
@@ -25,6 +34,7 @@ class SupabaseService:
             cls._client = create_client(
                 settings.SUPABASE_URL,
                 settings.SUPABASE_ANON_KEY,
+                options=ClientOptions(httpx_client=cls._get_http_client()),
             )
         return cls._client
 
@@ -36,6 +46,7 @@ class SupabaseService:
             cls._admin_client = create_client(
                 settings.SUPABASE_URL,
                 settings.SUPABASE_SERVICE_ROLE_KEY,
+                options=ClientOptions(httpx_client=cls._get_http_client()),
             )
         return cls._admin_client
 
@@ -49,21 +60,21 @@ class SupabaseService:
 
     # ─── Auth Operations ───────────────────────────────────────────────
 
-    def sign_up(self, email: str, password: str) -> dict:
+    def sign_up(self, email: str, password: str) -> Any:
         """Register a new user via Supabase Auth."""
         response = self.client.auth.sign_up(
             {"email": email, "password": password}
         )
         return response
 
-    def sign_in(self, email: str, password: str) -> dict:
+    def sign_in(self, email: str, password: str) -> Any:
         """Sign in a user with email and password."""
         response = self.client.auth.sign_in_with_password(
             {"email": email, "password": password}
         )
         return response
 
-    def refresh_session(self, refresh_token: str) -> dict:
+    def refresh_session(self, refresh_token: str) -> Any:
         """Refresh an access token using a Supabase refresh token."""
         response = self.client.auth.refresh_session(refresh_token)
         return response
@@ -72,12 +83,12 @@ class SupabaseService:
         """Sign out the current user."""
         self.client.auth.sign_out()
 
-    def get_user(self, token: str) -> dict:
+    def get_user(self, token: str) -> Any:
         """Get user details from token."""
         response = self.client.auth.get_user(token)
         return response
 
-    def reset_password(self, email: str) -> dict:
+    def reset_password(self, email: str) -> Any:
         """Send a password reset email."""
         response = self.client.auth.reset_password_email(email)
         return response

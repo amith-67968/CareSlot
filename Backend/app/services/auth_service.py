@@ -4,7 +4,7 @@ Handles user authentication via Supabase Auth.
 """
 
 from app.services.supabase_service import SupabaseService
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,13 @@ class AuthService:
             "expires_in": getattr(session, "expires_in", None),
         }
 
-    async def sign_up(self, email: str, password: str, full_name: str, extra_profile: Dict[str, Any] = None) -> Dict[str, Any]:
+    async def sign_up(
+        self,
+        email: str,
+        password: str,
+        full_name: str,
+        extra_profile: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Register a new user and create their profile."""
         try:
             auth_response = self.supabase.sign_up(email, password)
@@ -47,7 +53,7 @@ class AuthService:
 
             if user:
                 # Build profile data from signup fields
-                profile_data = {
+                profile_data: Dict[str, Any] = {
                     "full_name": full_name,
                     "email": email,
                 }
@@ -104,11 +110,11 @@ class AuthService:
         self.supabase.reset_password(email)
         return {"message": "Password reset email sent", "success": True}
 
-    async def get_profile(self, user_id: str) -> Dict[str, Any]:
+    async def get_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get user profile by user_id."""
         return self.supabase.select_one("user_profiles", filters={"user_id": user_id})
 
-    async def update_profile(self, user_id: str, data: dict) -> Dict[str, Any]:
+    async def update_profile(self, user_id: str, data: dict) -> Optional[Dict[str, Any]]:
         """Update user profile."""
         result = self.supabase.update("user_profiles", data, {"user_id": user_id})
         return result[0] if result else None

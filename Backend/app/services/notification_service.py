@@ -175,7 +175,7 @@ class NotificationService:
             return "not_configured"
 
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=15.0, trust_env=False) as client:
                 response = await client.post(
                     "https://api.resend.com/emails",
                     headers={
@@ -233,7 +233,7 @@ class NotificationService:
 
         url = f"https://api.twilio.com/2010-04-01/Accounts/{self.settings.TWILIO_ACCOUNT_SID}/Messages.json"
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=15.0, trust_env=False) as client:
                 response = await client.post(
                     url,
                     data={"From": self.settings.TWILIO_FROM_NUMBER, "To": to_phone, "Body": body},

@@ -48,7 +48,7 @@ async def verify_supabase_token(
 
     # Fallback: verify via Supabase API
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(trust_env=False) as client:
             response = await client.get(
                 f"{settings.SUPABASE_URL}/auth/v1/user",
                 headers={
