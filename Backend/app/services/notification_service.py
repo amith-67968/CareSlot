@@ -6,7 +6,7 @@ Manages notifications and scheduled reminders.
 from app.services.supabase_service import SupabaseService
 from app.config import get_settings
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from email.message import EmailMessage
 import smtplib
 import httpx
@@ -48,7 +48,7 @@ class NotificationService:
             "user_id": user_id, "title": title, "description": description,
             "reminder_type": reminder_type, "scheduled_at": scheduled_at.isoformat(),
             "status": "pending", "reference_id": reference_id, "recurrence": recurrence,
-            "delivery_channels": delivery_channels or ["email", "sms"],
+            "delivery_channels": delivery_channels or ["email"],
         }
         try:
             result = self.supabase.insert("reminders", data)
@@ -75,9 +75,23 @@ class NotificationService:
     async def cancel_reminder(self, user_id: str, reminder_id: str) -> Dict:
         return await self.update_reminder(user_id, reminder_id, {"status": "cancelled"})
 
+    def cancel_reminders_for_reference(self, user_id: str, reference_id: str) -> None:
+        """Cancel pending reminders linked to an appointment/prediction."""
+        try:
+            (
+                self.supabase.admin.table("reminders")
+                .update({"status": "cancelled"})
+                .eq("user_id", user_id)
+                .eq("reference_id", reference_id)
+                .eq("status", "pending")
+                .execute()
+            )
+        except Exception as exc:
+            logger.warning("Could not cancel reminders for reference %s: %s", reference_id, exc)
+
     async def process_due_reminders(self, batch_size: int = 50) -> Dict[str, Any]:
         """Send due reminders through in-app notification, email, and SMS."""
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         response = (
             self.supabase.admin.table("reminders")
             .select("*")
@@ -94,13 +108,18 @@ class NotificationService:
 
         for reminder in reminders:
             try:
-                profile = self.supabase.select_one(
-                    "user_profiles",
-                    filters={"user_id": reminder["user_id"]},
-                ) or {}
+                profile = self._get_recipient_profile(reminder["user_id"])
                 appointment = self._get_reference_appointment(reminder.get("reference_id"))
+                if appointment and appointment.get("status") in {"cancelled", "completed", "no-show"}:
+                    self._update_reminder_delivery(
+                        reminder["id"],
+                        "cancelled",
+                        {"email_status": "skipped", "sms_status": "skipped"},
+                    )
+                    continue
                 message = self._build_reminder_message(reminder, appointment)
                 channel_result = await self._deliver_reminder(reminder, profile, message)
+                self._raise_for_required_email_failure(reminder, channel_result)
 
                 await self.create_notification(
                     user_id=reminder["user_id"],
@@ -126,11 +145,13 @@ class NotificationService:
         return {"processed": processed, "failures": failures, "delivery": delivery}
 
     async def _deliver_reminder(self, reminder: Dict[str, Any], profile: Dict[str, Any], message: str) -> Dict[str, str]:
-        channels = reminder.get("delivery_channels") or ["email", "sms"]
+        channels = reminder.get("delivery_channels") or ["email"]
         result = {"email_status": "skipped", "sms_status": "skipped"}
 
         if "email" in channels and profile.get("email"):
             result["email_status"] = await self._send_email(profile["email"], reminder["title"], message)
+        elif "email" in channels:
+            result["email_status"] = "skipped"
 
         if "sms" in channels and profile.get("phone"):
             result["sms_status"] = await self._send_sms(profile["phone"], message)
@@ -140,6 +161,48 @@ class NotificationService:
     async def _send_email(self, to_email: str, subject: str, body: str) -> str:
         if not self.settings.ENABLE_EMAIL_NOTIFICATIONS:
             return "disabled"
+        provider = (self.settings.EMAIL_PROVIDER or "smtp").strip().lower()
+        if provider == "resend":
+            return await self._send_email_resend(to_email, subject, body)
+        if provider != "smtp":
+            logger.error("Unsupported email provider configured: %s", provider)
+            return "not_configured"
+
+        return await self._send_email_smtp(to_email, subject, body)
+
+    async def _send_email_resend(self, to_email: str, subject: str, body: str) -> str:
+        if not self.settings.RESEND_API_KEY:
+            return "not_configured"
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {self.settings.RESEND_API_KEY}",
+                        "User-Agent": "CareSlot/1.0",
+                    },
+                    json={
+                        "from": self.settings.SMTP_FROM_EMAIL,
+                        "to": [to_email],
+                        "subject": subject,
+                        "text": body,
+                    },
+                )
+                response.raise_for_status()
+            return "sent"
+        except httpx.HTTPStatusError as exc:
+            logger.error(
+                "Resend email reminder failed (%s): %s",
+                exc.response.status_code,
+                exc.response.text,
+            )
+            return "failed"
+        except Exception as exc:
+            logger.error("Resend email reminder failed: %s", exc)
+            return "failed"
+
+    async def _send_email_smtp(self, to_email: str, subject: str, body: str) -> str:
         if not self.settings.SMTP_HOST:
             return "not_configured"
 
@@ -150,8 +213,10 @@ class NotificationService:
         msg.set_content(body)
 
         try:
-            with smtplib.SMTP(self.settings.SMTP_HOST, self.settings.SMTP_PORT, timeout=15) as smtp:
-                smtp.starttls()
+            smtp_cls = smtplib.SMTP_SSL if self.settings.SMTP_PORT == 465 else smtplib.SMTP
+            with smtp_cls(self.settings.SMTP_HOST, self.settings.SMTP_PORT, timeout=15) as smtp:
+                if self.settings.SMTP_PORT != 465:
+                    smtp.starttls()
                 if self.settings.SMTP_USERNAME:
                     smtp.login(self.settings.SMTP_USERNAME, self.settings.SMTP_PASSWORD)
                 smtp.send_message(msg)
@@ -180,6 +245,14 @@ class NotificationService:
             logger.error("SMS reminder failed: %s", exc)
             return "failed"
 
+    def _raise_for_required_email_failure(self, reminder: Dict[str, Any], delivery: Dict[str, str]) -> None:
+        channels = reminder.get("delivery_channels") or ["email"]
+        email_status = delivery.get("email_status")
+        if "email" not in channels or email_status in {"sent", "disabled"}:
+            return
+        if self.settings.ENABLE_EMAIL_NOTIFICATIONS and email_status in {"failed", "not_configured", "skipped"}:
+            raise RuntimeError(f"Email reminder was not sent: {email_status}")
+
     def _build_reminder_message(self, reminder: Dict[str, Any], appointment: Optional[Dict[str, Any]]) -> str:
         if appointment:
             return (
@@ -188,6 +261,28 @@ class NotificationService:
                 f"{str(appointment.get('appointment_time', ''))[:5]} today."
             )
         return reminder.get("description") or f"Reminder: {reminder['title']}"
+
+    def _get_recipient_profile(self, user_id: str) -> Dict[str, Any]:
+        """Resolve email/phone using profile first, then Supabase Auth registered email."""
+        profile = {}
+        try:
+            profile = self.supabase.select_one("user_profiles", filters={"user_id": user_id}) or {}
+        except Exception:
+            profile = {}
+
+        if profile.get("email"):
+            return profile
+
+        try:
+            auth_response = self.supabase.admin.auth.admin.get_user_by_id(user_id)
+            auth_user = getattr(auth_response, "user", None) or auth_response
+            auth_email = getattr(auth_user, "email", None)
+            if auth_email:
+                profile["email"] = auth_email
+        except Exception as exc:
+            logger.warning("Could not resolve Supabase Auth email for reminder user %s: %s", user_id, exc)
+
+        return profile
 
     def _get_reference_appointment(self, reference_id: Optional[str]) -> Optional[Dict[str, Any]]:
         if not reference_id:
@@ -200,7 +295,7 @@ class NotificationService:
     def _update_reminder_delivery(self, reminder_id: str, status: str, delivery: Dict[str, Any]) -> None:
         update = {
             "status": status,
-            "sent_at": datetime.utcnow().isoformat() if status == "sent" else None,
+            "sent_at": datetime.now(timezone.utc).isoformat() if status == "sent" else None,
             "email_status": delivery.get("email_status"),
             "sms_status": delivery.get("sms_status"),
             "last_error": delivery.get("last_error"),

@@ -39,7 +39,7 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS external_provider TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS api_payload JSONB DEFAULT '{}';
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminder_status TEXT DEFAULT 'pending'
     CHECK (reminder_status IN ('pending', 'sent', 'cancelled', 'failed'));
-ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminder_channels TEXT[] DEFAULT ARRAY['email','sms'];
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminder_channels TEXT[] DEFAULT ARRAY['email'];
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS hospital_staff_notified_at TIMESTAMPTZ;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS rescheduled_from UUID REFERENCES appointments(id);
@@ -106,7 +106,7 @@ CREATE INDEX IF NOT EXISTS idx_hospital_booking_requests_user
 ON hospital_booking_requests(user_id, created_at);
 
 -- Reminder delivery fields for email/SMS/WhatsApp-ready architecture.
-ALTER TABLE reminders ADD COLUMN IF NOT EXISTS delivery_channels TEXT[] DEFAULT ARRAY['email','sms'];
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS delivery_channels TEXT[] DEFAULT ARRAY['email'];
 ALTER TABLE reminders ADD COLUMN IF NOT EXISTS email_status TEXT DEFAULT 'pending'
     CHECK (email_status IN ('pending', 'sent', 'failed', 'disabled', 'not_configured', 'skipped'));
 ALTER TABLE reminders ADD COLUMN IF NOT EXISTS sms_status TEXT DEFAULT 'pending'

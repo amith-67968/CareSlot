@@ -45,8 +45,11 @@ class Settings(BaseSettings):
     HOSPITAL_API_TIMEOUT_SECONDS: float = 12.0
 
     # --- Scheduled Reminder Delivery ---
+    APPOINTMENT_TIMEZONE: str = "Asia/Kolkata"
     CRON_SECRET: str = ""
     ENABLE_EMAIL_NOTIFICATIONS: bool = False
+    EMAIL_PROVIDER: str = "smtp"
+    RESEND_API_KEY: str = ""
     ENABLE_SMS_NOTIFICATIONS: bool = False
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

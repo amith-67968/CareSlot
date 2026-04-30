@@ -128,7 +128,7 @@ class AppointmentCreate(BaseModel):
     notes: Optional[str] = None
     source_context: Optional[Dict[str, Any]] = None
     patient_details: Optional[Dict[str, Any]] = None
-    reminder_channels: List[str] = Field(default_factory=lambda: ["email", "sms"])
+    reminder_channels: List[str] = Field(default_factory=lambda: ["email"])
 
 
 class AppointmentUpdate(BaseModel):

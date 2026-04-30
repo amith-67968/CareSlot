@@ -8,8 +8,30 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { appointmentAPI } from '../../services/api';
 import {
-  CalendarCheck, ChevronRight, Plus, History,
+  CalendarCheck, ChevronRight, Plus, History, Building2,
 } from 'lucide-react';
+
+const UPCOMING_STATUSES = new Set(['scheduled', 'confirmed', 'pending_confirmation', 'rescheduled']);
+const STATUS_LABELS = {
+  scheduled: 'Scheduled',
+  confirmed: 'Confirmed',
+  pending_confirmation: 'Pending',
+  rescheduled: 'Rescheduled',
+};
+
+function todayInput() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function formatTime(value) {
+  if (!value) return '';
+  const [hourRaw, minute = '00'] = String(value).slice(0, 5).split(':');
+  const hour = Number(hourRaw);
+  if (Number.isNaN(hour)) return value;
+  return `${hour % 12 || 12}:${minute} ${hour >= 12 ? 'PM' : 'AM'}`;
+}
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -28,10 +50,11 @@ export default function Overview() {
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
   const userName = user?.full_name || user?.email?.split('@')[0] || 'there';
 
-  // Get upcoming appointments (scheduled ones, sorted by date)
+  // Get upcoming appointments across direct API and fallback booking statuses.
+  const today = todayInput();
   const upcoming = appointments
-    .filter(a => a.status === 'scheduled')
-    .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
+    .filter((a) => UPCOMING_STATUSES.has(a.status) && a.appointment_date >= today)
+    .sort((a, b) => new Date(`${a.appointment_date}T${a.appointment_time || '00:00'}`) - new Date(`${b.appointment_date}T${b.appointment_time || '00:00'}`))
     .slice(0, 5);
 
   const nextAppt = upcoming[0];
@@ -63,7 +86,7 @@ export default function Overview() {
             <span>
               Next appointment: <strong>{nextAppt.doctor_name}</strong> — {nextAppt.doctor_specialty || 'General'}
               {' · '}{new Date(nextAppt.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              {' at '}{nextAppt.appointment_time}
+              {' at '}{formatTime(nextAppt.appointment_time)}
             </span>
           </div>
         )}
@@ -79,24 +102,29 @@ export default function Overview() {
             </div>
           ) : (
             upcoming.map((a) => {
-              const timeStr = a.appointment_time || '';
-              const [h, m] = timeStr.split(':');
-              const hour12 = h ? (parseInt(h) % 12 || 12) : '';
-              const ampm = h ? (parseInt(h) >= 12 ? 'PM' : 'AM') : '';
+              const dateLabel = new Date(`${a.appointment_date}T00:00:00`).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              });
+              const statusLabel = STATUS_LABELS[a.status] || a.status;
 
               return (
-                <div key={a.id} className="ov-appt-row">
+                <button key={a.id} className="ov-appt-row" onClick={() => navigate('/dashboard/appointments')}>
                   <div className="ov-appt-time">
-                    <span className="ov-appt-hour">{hour12}:{m || '00'}</span>
-                    <span className="ov-appt-ampm">{ampm}</span>
+                    <span className="ov-appt-hour">{formatTime(a.appointment_time).replace(' ', '')}</span>
+                    <span className="ov-appt-ampm">{dateLabel}</span>
                   </div>
                   <div className="ov-appt-divider" />
                   <div className="ov-appt-info">
-                    <strong>{a.doctor_name}</strong>
+                    <div className="ov-appt-info-top">
+                      <strong>{a.doctor_name}</strong>
+                      <span className={`ov-appt-status ov-appt-status-${a.status}`}>{statusLabel}</span>
+                    </div>
                     <span>{a.doctor_specialty || 'General Consultation'}</span>
+                    <small><Building2 size={12} /> {a.hospital_name}</small>
                   </div>
                   <ChevronRight size={16} className="ov-appt-arrow" />
-                </div>
+                </button>
               );
             })
           )}

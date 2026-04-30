@@ -10,7 +10,7 @@ import ProfilePopup from '../components/ProfilePopup';
 import ChatPopup from '../components/ChatPopup';
 import {
   LayoutDashboard, ScanEye, CalendarCheck, MapPin,
-  Menu, X, HeartPulse, ChevronRight, Search,
+  Menu, X, HeartPulse, ChevronRight,
 } from 'lucide-react';
 
 const NAV = [
@@ -93,11 +93,6 @@ export default function DashboardLayout() {
           >
             <Menu size={22} />
           </button>
-
-          <div className="dash-search-bar">
-            <Search size={16} />
-            <input type="text" placeholder="Search patient ID or condition..." />
-          </div>
 
           <div className="dash-topbar-right">
             <div

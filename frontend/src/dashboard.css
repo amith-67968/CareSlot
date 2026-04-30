@@ -56,16 +56,23 @@
 .ov-appt-alert{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;border-radius:10px;margin-bottom:.85rem;font-size:.82rem}
 .ov-appt-alert strong{font-weight:700}
 .ov-appt-list{display:flex;flex-direction:column;gap:0}
-.ov-appt-row{display:flex;align-items:center;gap:1rem;padding:.75rem .5rem;border-bottom:1px solid #f1f5f9;transition:.1s}
+.ov-appt-row{display:flex;align-items:center;gap:1rem;width:100%;padding:.75rem .5rem;border:none;border-bottom:1px solid #f1f5f9;background:transparent;text-align:left;cursor:pointer;transition:.1s}
 .ov-appt-row:last-child{border-bottom:none}
 .ov-appt-row:hover{background:#fafbfd}
 .ov-appt-time{text-align:right;min-width:52px;flex-shrink:0}
-.ov-appt-hour{display:block;font-size:1rem;font-weight:800;color:#0f172a}
+.ov-appt-hour{display:block;font-size:.9rem;font-weight:800;color:#0f172a}
 .ov-appt-ampm{display:block;font-size:.65rem;font-weight:600;color:#94a3b8}
 .ov-appt-divider{width:2px;height:32px;background:#e2e8f0;border-radius:1px;flex-shrink:0}
 .ov-appt-info{flex:1;min-width:0}
 .ov-appt-info strong{display:block;font-size:.88rem;font-weight:700;color:#0f172a}
 .ov-appt-info span{font-size:.75rem;color:#64748b}
+.ov-appt-info-top{display:flex;align-items:center;gap:.5rem;justify-content:space-between}
+.ov-appt-info small{display:flex;align-items:center;gap:.25rem;margin-top:.2rem;font-size:.7rem;color:#94a3b8}
+.ov-appt-status{padding:.12rem .45rem;border-radius:999px;font-size:.62rem!important;font-weight:800;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.ov-appt-status-scheduled{background:#eff6ff;color:#1d4ed8!important}
+.ov-appt-status-confirmed{background:#dcfce7;color:#15803d!important}
+.ov-appt-status-pending_confirmation{background:#fef3c7;color:#b45309!important}
+.ov-appt-status-rescheduled{background:#ecfeff;color:#0e7490!important}
 .ov-appt-arrow{color:#cbd5e1;flex-shrink:0}
 .ov-empty{text-align:center;padding:2rem;color:#94a3b8;font-size:.85rem}
 .ov-empty p{margin:.5rem 0 0}

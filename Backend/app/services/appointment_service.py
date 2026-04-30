@@ -5,8 +5,9 @@ Production-oriented booking flow with direct hospital APIs and internal fallback
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import logging
 
 from app.services.doctor_service import DoctorService
@@ -151,7 +152,7 @@ class AppointmentService:
                 "hospital_response": external.get("raw"),
             },
             "reminder_status": "pending",
-            "reminder_channels": data.get("reminder_channels") or ["email", "sms"],
+            "reminder_channels": data.get("reminder_channels") or ["email"],
             "confirmed_at": datetime.utcnow().isoformat() if status == "confirmed" else None,
         }
 
@@ -215,6 +216,7 @@ class AppointmentService:
         result = self._update_appointment_safely(appointment_id, user_id, update)
         updated = result[0] if result else None
         if updated:
+            self.notification_service.cancel_reminders_for_reference(user_id, appointment_id)
             await self._create_appointment_reminder(user_id, updated)
         return updated
 
@@ -232,6 +234,7 @@ class AppointmentService:
             except Exception as exc:
                 logger.warning("External cancellation failed: %s", exc)
 
+        self.notification_service.cancel_reminders_for_reference(user_id, appointment_id)
         return await self.update_appointment(
             user_id,
             appointment_id,
@@ -454,9 +457,10 @@ class AppointmentService:
                 self._coerce_date(appointment["appointment_date"]),
                 self._coerce_time(appointment["appointment_time"]),
             )
-            reminder_at = appointment_dt - timedelta(hours=1)
-            if reminder_at < datetime.utcnow():
-                reminder_at = datetime.utcnow() + timedelta(minutes=2)
+            appointment_dt = appointment_dt.replace(tzinfo=self._appointment_timezone())
+            reminder_at = (appointment_dt - timedelta(hours=1)).astimezone(timezone.utc)
+            if reminder_at < datetime.now(timezone.utc):
+                reminder_at = datetime.now(timezone.utc) + timedelta(minutes=2)
             await self.notification_service.create_reminder(
                 user_id=user_id,
                 title=f"Appointment with {appointment['doctor_name']}",
@@ -468,7 +472,7 @@ class AppointmentService:
                 reminder_type="appointment",
                 scheduled_at=reminder_at,
                 reference_id=appointment["id"],
-                delivery_channels=channels or appointment.get("reminder_channels") or ["email", "sms"],
+                delivery_channels=channels or appointment.get("reminder_channels") or ["email"],
             )
         except Exception as exc:
             logger.error("Reminder creation failed: %s", exc)
@@ -629,3 +633,9 @@ class AppointmentService:
     def _contains_any(self, value: str, needles: List[str]) -> bool:
         text = value.lower()
         return any(needle in text for needle in needles)
+
+    def _appointment_timezone(self):
+        try:
+            return ZoneInfo(getattr(self.integration_service.settings, "APPOINTMENT_TIMEZONE", "Asia/Kolkata"))
+        except ZoneInfoNotFoundError:
+            return ZoneInfo("UTC")
