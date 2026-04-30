@@ -4,7 +4,10 @@ Endpoints for user authentication.
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends
-from app.models.user import SignUpRequest, SignInRequest, PasswordResetRequest, AuthResponse, MessageResponse
+from app.models.user import (
+    SignUpRequest, SignInRequest, PasswordResetRequest,
+    TokenRefreshRequest, AuthResponse, MessageResponse,
+)
 from app.services.auth_service import AuthService
 from app.dependencies import get_current_user
 
@@ -31,6 +34,8 @@ async def sign_up(request: SignUpRequest):
             refresh_token=result.get("refresh_token"),
             user_id=result.get("user_id"),
             email=request.email,
+            expires_at=result.get("expires_at"),
+            expires_in=result.get("expires_in"),
             message="Check your email to confirm your account" if not token else "Account created successfully",
         )
     except Exception as e:
@@ -48,9 +53,29 @@ async def sign_in(request: SignInRequest):
             refresh_token=result.get("refresh_token"),
             user_id=result["user_id"],
             email=result["email"],
+            expires_at=result.get("expires_at"),
+            expires_in=result.get("expires_in"),
         )
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+
+@router.post("/refresh", response_model=AuthResponse)
+async def refresh_session(request: TokenRefreshRequest):
+    """Refresh an expired Supabase access token."""
+    try:
+        service = AuthService()
+        result = await service.refresh_session(request.refresh_token)
+        return AuthResponse(
+            access_token=result["access_token"],
+            refresh_token=result.get("refresh_token"),
+            user_id=result["user_id"],
+            email=result["email"],
+            expires_at=result.get("expires_at"),
+            expires_in=result.get("expires_in"),
+        )
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
 
 
 @router.post("/logout", response_model=MessageResponse)

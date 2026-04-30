@@ -63,6 +63,11 @@ class SupabaseService:
         )
         return response
 
+    def refresh_session(self, refresh_token: str) -> dict:
+        """Refresh an access token using a Supabase refresh token."""
+        response = self.client.auth.refresh_session(refresh_token)
+        return response
+
     def sign_out(self, token: str) -> None:
         """Sign out the current user."""
         self.client.auth.sign_out()

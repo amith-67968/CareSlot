@@ -24,7 +24,7 @@ export default function AuthPage() {
   const [dob, setDob] = useState('');
   const [gender, setGender] = useState('');
   const [bloodGroup, setBloodGroup] = useState('');
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   const [success, setSuccess] = useState('');
 

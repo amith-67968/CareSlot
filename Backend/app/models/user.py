@@ -36,12 +36,17 @@ class SignInRequest(BaseModel):
 class PasswordResetRequest(BaseModel):
     email: EmailStr
 
+class TokenRefreshRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=1)
+
 class AuthResponse(BaseModel):
     access_token: Optional[str] = None
     refresh_token: Optional[str] = None
     token_type: str = "bearer"
     user_id: Optional[str] = None
-    email: str
+    email: Optional[str] = None
+    expires_at: Optional[int] = None
+    expires_in: Optional[int] = None
     message: Optional[str] = None
 
 class MessageResponse(BaseModel):

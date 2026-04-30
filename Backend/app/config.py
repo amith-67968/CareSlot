@@ -4,6 +4,7 @@ Loads environment variables using Pydantic Settings.
 """
 
 from functools import lru_cache
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from typing import List
 
@@ -38,6 +39,14 @@ class Settings(BaseSettings):
 
     # --- Embeddings ---
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, value):
+        """Accept common deployment strings for DEBUG instead of failing startup."""
+        if isinstance(value, str) and value.lower() in {"release", "prod", "production"}:
+            return False
+        return value
 
     @property
     def cors_origins_list(self) -> List[str]:

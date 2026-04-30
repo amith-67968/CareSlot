@@ -4,7 +4,6 @@ Handles user authentication via Supabase Auth.
 """
 
 from app.services.supabase_service import SupabaseService
-from app.models.user import UserProfileCreate
 from typing import Dict, Any
 import logging
 
@@ -16,6 +15,29 @@ class AuthService:
 
     def __init__(self):
         self.supabase = SupabaseService()
+
+    def _format_auth_response(self, auth_response) -> Dict[str, Any]:
+        """Convert a Supabase auth response into the API auth payload."""
+        user = auth_response.user
+        session = auth_response.session
+        if not session or not user:
+            return {
+                "user_id": user.id if user else None,
+                "email": user.email if user else None,
+                "access_token": None,
+                "refresh_token": None,
+                "expires_at": None,
+                "expires_in": None,
+            }
+
+        return {
+            "user_id": user.id,
+            "email": user.email,
+            "access_token": session.access_token,
+            "refresh_token": session.refresh_token,
+            "expires_at": getattr(session, "expires_at", None),
+            "expires_in": getattr(session, "expires_in", None),
+        }
 
     async def sign_up(self, email: str, password: str, full_name: str, extra_profile: Dict[str, Any] = None) -> Dict[str, Any]:
         """Register a new user and create their profile."""
@@ -45,12 +67,9 @@ class AuthService:
                     if update_fields:
                         self.supabase.update("user_profiles", update_fields, {"user_id": user.id})
 
-            return {
-                "user_id": user.id if user else None,
-                "email": email,
-                "access_token": auth_response.session.access_token if auth_response.session else None,
-                "refresh_token": auth_response.session.refresh_token if auth_response.session else None,
-            }
+            result = self._format_auth_response(auth_response)
+            result["email"] = result.get("email") or email
+            return result
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Sign up error: {error_msg}")
@@ -62,17 +81,18 @@ class AuthService:
         """Sign in an existing user."""
         try:
             auth_response = self.supabase.sign_in(email, password)
-            user = auth_response.user
-            session = auth_response.session
-
-            return {
-                "user_id": user.id,
-                "email": user.email,
-                "access_token": session.access_token,
-                "refresh_token": session.refresh_token,
-            }
+            return self._format_auth_response(auth_response)
         except Exception as e:
             logger.error(f"Sign in error: {e}")
+            raise
+
+    async def refresh_session(self, refresh_token: str) -> Dict[str, Any]:
+        """Refresh an existing Supabase session."""
+        try:
+            auth_response = self.supabase.refresh_session(refresh_token)
+            return self._format_auth_response(auth_response)
+        except Exception as e:
+            logger.error(f"Refresh session error: {e}")
             raise
 
     async def sign_out(self, token: str) -> None:
