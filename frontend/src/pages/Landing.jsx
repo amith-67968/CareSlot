@@ -56,7 +56,7 @@ export default function Landing() {
               <span className="block whitespace-nowrap font-bold text-blue-700">Powered by AI</span>
             </h1>
 
-            <p className="mt-10 max-w-[34rem] text-base leading-7 text-slate-600">
+            <p className="mt-10 max-w-136 text-base leading-7 text-slate-600">
               Experience proactive healthcare that understands you. From instant disease screening to real-time posture analysis, we bridge the gap between clinical excellence and daily life.
             </p>
 
@@ -76,8 +76,8 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="relative w-full max-w-[760px] justify-self-end pr-5 lg:pl-0 lg:pr-10">
-            <div className="absolute -inset-y-5 left-4 right-0 -z-10 rounded-l-[2rem] bg-white/60 blur-2xl" />
+          <div className="relative w-full max-w-190 justify-self-end pr-5 lg:pl-0 lg:pr-10">
+            <div className="absolute -inset-y-5 left-4 right-0 -z-10 rounded-l-4xl bg-white/60 blur-2xl" />
             <ImageSlider />
           </div>
         </div>
