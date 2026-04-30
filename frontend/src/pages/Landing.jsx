@@ -4,11 +4,14 @@
  */
 
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { ChevronRight, HeartPulse, Sparkles } from 'lucide-react';
 import ImageSlider from '../components/ImageSlider';
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const primaryPath = user ? '/dashboard' : '/auth';
 
   return (
     <main className="h-screen overflow-hidden bg-[#f5f8ff] text-[#06122f]">
@@ -23,16 +26,16 @@ export default function Landing() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate(primaryPath)}
               className="hidden text-sm font-medium text-slate-600 transition hover:text-blue-700 sm:inline-flex"
             >
-              Login
+              {user ? 'Dashboard' : 'Login'}
             </button>
             <button
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate(primaryPath)}
               className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-700/20 transition hover:-translate-y-0.5 hover:bg-blue-800"
             >
-              Get Started
+              {user ? 'Open Dashboard' : 'Get Started'}
             </button>
           </div>
         </nav>
@@ -59,10 +62,10 @@ export default function Landing() {
 
             <div className="mt-7 flex flex-col gap-4 sm:flex-row">
               <button
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate(primaryPath)}
                 className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-8 py-4 text-sm font-bold text-white shadow-xl shadow-blue-700/20 transition hover:-translate-y-1 hover:bg-blue-800"
               >
-                Get Started
+                {user ? 'Open Dashboard' : 'Get Started'}
               </button>
               <a
                 href="#footer"

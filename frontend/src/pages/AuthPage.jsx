@@ -36,7 +36,7 @@ export default function AuthPage() {
     try {
       if (tab === 'login') {
         await login(email, password, remember);
-        navigate('/dashboard');
+        navigate('/');
       } else {
         if (password.length < 8) {
           setError('Password must be at least 8 characters');
@@ -54,7 +54,7 @@ export default function AuthPage() {
           setSuccess(result.message);
           setTab('login');
         } else {
-          navigate('/dashboard');
+          navigate('/');
         }
       }
     } catch (err) {

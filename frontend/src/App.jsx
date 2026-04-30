@@ -20,7 +20,7 @@ function ProtectedRoute({ children }) {
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to="/dashboard" replace /> : children;
+  return user ? <Navigate to="/" replace /> : children;
 }
 
 function App() {
@@ -28,11 +28,7 @@ function App() {
     <Routes>
       <Route
         path="/"
-        element={
-          <PublicRoute>
-            <Landing />
-          </PublicRoute>
-        }
+        element={<Landing />}
       />
       <Route
         path="/auth"
