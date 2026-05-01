@@ -398,22 +398,38 @@ export default function PCODResults() {
         <div className="skinr-booking-overlay" onClick={() => setBookingDoc(null)}>
           <div className="skinr-booking-modal" onClick={e => e.stopPropagation()}>
             <div className="skinr-booking-header">
-              <h3>Book Appointment</h3>
-              <button onClick={() => setBookingDoc(null)}><X size={16} /></button>
+              <h2>Book Appointment</h2>
+              <button
+                type="button"
+                className="skinr-booking-close"
+                onClick={() => setBookingDoc(null)}
+                aria-label="Close booking modal"
+              >
+                <X size={16} />
+              </button>
             </div>
             <div className="skinr-booking-body">
-              <p className="skinr-booking-doc"><Stethoscope size={14} /> {bookingDoc.name}</p>
-              <label className="skinr-booking-label">Select Date</label>
-              <input
-                type="date"
-                className="skinr-booking-date"
-                value={bookDate}
-                min={new Date().toISOString().split('T')[0]}
-                onChange={e => loadSlots(e.target.value)}
-              />
+              <div className="skinr-booking-info">
+                <div className="skinr-booking-info-icon"><Stethoscope size={18} /></div>
+                <div>
+                  <strong>{bookingDoc.name}</strong>
+                  <span>{bookingDoc.address || getSpecialtyLabel(report?.recommended_specialist)}</span>
+                </div>
+              </div>
+
+              <div className="skinr-booking-field">
+                <label><Calendar size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> Date</label>
+                <input
+                  type="date"
+                  value={bookDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={e => loadSlots(e.target.value)}
+                />
+              </div>
+
               {slots.length > 0 && (
-                <>
-                  <label className="skinr-booking-label">Available Slots</label>
+                <div className="skinr-booking-field">
+                  <label><Clock size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> Available Slots</label>
                   <div className="skinr-slots-grid">
                     {slots.map((s, i) => {
                       const value = typeof s === 'string' ? s : s?.time;
@@ -421,23 +437,29 @@ export default function PCODResults() {
                       return (
                         <button
                           key={value || i}
-                          className={`skinr-slot-btn ${bookSlot === value ? 'skinr-slot-active' : ''} ${!available ? 'skinr-slot-unavail' : ''}`}
+                          type="button"
+                          className={`skinr-slot ${bookSlot === value ? 'skinr-slot-active' : ''} ${!available ? 'skinr-slot-unavail' : ''}`}
                           disabled={!available}
                           onClick={() => setBookSlot(value)}
                         >
-                          <Clock size={12} /> {formatSlotLabel(s)}
+                          {formatSlotLabel(s)}
                         </button>
                       );
                     })}
                   </div>
-                </>
+                </div>
               )}
               <button
-                className="skinr-confirm-btn"
+                type="button"
+                className="skinr-booking-submit"
                 disabled={!bookDate || !bookSlot || bookingLoading}
                 onClick={confirmBooking}
               >
-                {bookingLoading ? <><Loader2 size={14} className="auth-spinner" /> Booking...</> : 'Confirm Appointment'}
+                {bookingLoading ? (
+                  <><Loader2 size={16} className="auth-spinner" /> Booking...</>
+                ) : (
+                  <><Calendar size={16} /> Confirm Appointment</>
+                )}
               </button>
             </div>
           </div>
