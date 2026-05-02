@@ -6,7 +6,7 @@ It is built as a React frontend with a FastAPI backend, Supabase for auth/databa
 
 > CareSlot provides preliminary health guidance only. It is not a diagnosis platform and does not replace a doctor.
 
-## Visual Overview
+
 
 
 ### System Architecture
