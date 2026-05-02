@@ -8,9 +8,6 @@ It is built as a React frontend with a FastAPI backend, Supabase for auth/databa
 
 ## Visual Overview
 
-<p align="center">
-  <img src="frontend/src/assets/hero.png" alt="CareSlot healthcare dashboard visual" width="720">
-</p>
 
 ### System Architecture
 
