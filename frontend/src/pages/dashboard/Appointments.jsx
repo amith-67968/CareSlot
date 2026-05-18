@@ -478,7 +478,7 @@ export default function Appointments() {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-3">
+      <section className="grid items-start gap-5 xl:grid-cols-3">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-1">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
@@ -535,7 +535,7 @@ export default function Appointments() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+        <div className="max-h-none overflow-y-visible rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2 xl:max-h-[calc(100vh-8rem)] xl:overflow-y-auto">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-base font-black text-slate-950">Nearby Hospitals</h2>
