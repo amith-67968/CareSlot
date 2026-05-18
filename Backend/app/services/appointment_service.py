@@ -419,6 +419,17 @@ class AppointmentService:
 
         status_label = "confirmed" if booking_mode == "direct_api" else "sent to hospital staff for confirmation"
         try:
+            email_status = await self.notification_service.send_appointment_booking_email(
+                user_id=user_id,
+                appointment=appointment,
+                status_label=status_label,
+            )
+            if email_status not in {"sent", "disabled", "skipped"}:
+                logger.warning("Appointment booking email was not sent: %s", email_status)
+        except Exception as exc:
+            logger.warning("Appointment booking email failed: %s", exc)
+
+        try:
             await self.notification_service.create_notification(
                 user_id=user_id,
                 title="Appointment request received",

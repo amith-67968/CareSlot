@@ -49,17 +49,17 @@ SPECIALTY_DEPARTMENTS = {
 }
 
 DOCTOR_NAMES = {
-    "cardiologist": ["Aarav Mehta", "Nisha Rao", "Kabir Sethi"],
-    "dermatologist": ["Ira Kapoor", "Rohan Menon", "Ananya Shah"],
-    "gynecologist": ["Meera Iyer", "Priya Nair", "Sana Qureshi"],
-    "endocrinologist": ["Dev Khanna", "Leena Thomas", "Ritika Sen"],
-    "pulmonologist": ["Arjun Batra", "Tanvi Desai", "Mihir Paul"],
-    "neurologist": ["Rehan Malik", "Kavya Raman", "Neel Verma"],
-    "orthopedist": ["Vikram Joshi", "Pooja Das", "Aditya Rao"],
-    "psychiatrist": ["Sara Fernandes", "Maya Singh", "Kunal Arora"],
-    "gastroenterologist": ["Anil Sharma", "Zoya Khan", "Harsh Patel"],
-    "general_physician": ["Rhea Gupta", "Sameer Kulkarni", "Tara Bose"],
-    "emergency": ["Neha Chauhan", "Arman Ali", "Veda Krishnan"],
+    "cardiologist": ["Aarav Mehta", "Nisha Rao", "Kabir Sethi", "Riya Bansal", "Farhan Mir", "Ishaan Dutta"],
+    "dermatologist": ["Ira Kapoor", "Rohan Menon", "Ananya Shah", "Vikram Sood", "Tanya George", "Naina Batra", "Aditi Rao", "Karan Malhotra", "Mehul Desai"],
+    "gynecologist": ["Meera Iyer", "Priya Nair", "Sana Qureshi", "Kavita Rao", "Zara Thomas", "Divya Menon"],
+    "endocrinologist": ["Dev Khanna", "Leena Thomas", "Ritika Sen", "Nikhil Bhat", "Maya Das", "Arvind Rao"],
+    "pulmonologist": ["Arjun Batra", "Tanvi Desai", "Mihir Paul", "Reema Shah", "Kabir Nair", "Sonal Iyer"],
+    "neurologist": ["Rehan Malik", "Kavya Raman", "Neel Verma", "Asha Kapoor", "Rishi Menon", "Tara Sethi"],
+    "orthopedist": ["Vikram Joshi", "Pooja Das", "Aditya Rao", "Neha Kulkarni", "Rahul Iyer", "Mira Shah"],
+    "psychiatrist": ["Sara Fernandes", "Maya Singh", "Kunal Arora", "Rhea Nair", "Aman George", "Leela Menon"],
+    "gastroenterologist": ["Anil Sharma", "Zoya Khan", "Harsh Patel", "Meena Rao", "Vivaan Shah", "Rekha Iyer"],
+    "general_physician": ["Rhea Gupta", "Sameer Kulkarni", "Tara Bose", "Amit Nair", "Nandita Rao", "Kiran Shah"],
+    "emergency": ["Neha Chauhan", "Arman Ali", "Veda Krishnan", "Rohit Sinha", "Isha Paul", "Devika Menon"],
 }
 
 
@@ -337,9 +337,11 @@ class HospitalIntegrationService:
         names = DOCTOR_NAMES.get(specialty_key, DOCTOR_NAMES["general_physician"])
         label = SPECIALTY_LABELS.get(specialty_key, "General Physician")
         seed = hospital.get("place_id") or hospital.get("name") or "careslot"
+        offset = self._stable_int(f"{seed}:{specialty_key}:name-offset")
         doctors = []
 
-        for idx, name in enumerate(names):
+        for idx in range(min(3, len(names))):
+            name = names[(offset + idx * 2) % len(names)]
             stable = self._stable_int(f"{seed}:{specialty_key}:{idx}")
             doctors.append(
                 {

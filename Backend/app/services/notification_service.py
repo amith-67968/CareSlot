@@ -29,6 +29,22 @@ class NotificationService:
         result = self.supabase.insert("notifications", data)
         return result[0] if result else None
 
+    async def send_appointment_booking_email(
+        self,
+        user_id: str,
+        appointment: Dict[str, Any],
+        status_label: str,
+    ) -> str:
+        """Send an immediate email when an appointment booking is created."""
+        profile = self._get_recipient_profile(user_id)
+        recipient = profile.get("email")
+        if not recipient:
+            return "skipped"
+
+        subject = "CareSlot appointment booking received"
+        body = self._build_booking_email_body(appointment, status_label)
+        return await self._send_email(recipient, subject, body)
+
     async def get_notifications(self, user_id: str, limit: int = 50) -> Dict:
         notifs = self.supabase.select("notifications", filters={"user_id": user_id},
                                        order_by="-created_at", limit=limit)
@@ -161,6 +177,13 @@ class NotificationService:
     async def _send_email(self, to_email: str, subject: str, body: str) -> str:
         if not self.settings.ENABLE_EMAIL_NOTIFICATIONS:
             return "disabled"
+        if self.settings.EMAIL_TEST_RECIPIENT:
+            logger.info(
+                "Redirecting email to test recipient %s instead of %s",
+                self.settings.EMAIL_TEST_RECIPIENT,
+                to_email,
+            )
+            to_email = self.settings.EMAIL_TEST_RECIPIENT
         provider = (self.settings.EMAIL_PROVIDER or "smtp").strip().lower()
         if provider == "resend":
             return await self._send_email_resend(to_email, subject, body)
@@ -261,6 +284,36 @@ class NotificationService:
                 f"{str(appointment.get('appointment_time', ''))[:5]} today."
             )
         return reminder.get("description") or f"Reminder: {reminder['title']}"
+
+    def _build_booking_email_body(self, appointment: Dict[str, Any], status_label: str) -> str:
+        appointment_date = appointment.get("appointment_date", "")
+        appointment_time = str(appointment.get("appointment_time", ""))[:5]
+        doctor_name = appointment.get("doctor_name", "your doctor")
+        hospital_name = appointment.get("hospital_name", "the hospital")
+        consultation_type = appointment.get("consultation_type", "in-person")
+
+        lines = [
+            "Your appointment booking has been received by CareSlot.",
+            "",
+            f"Doctor: {doctor_name}",
+            f"Hospital: {hospital_name}",
+            f"Date: {appointment_date}",
+            f"Time: {appointment_time}",
+            f"Consultation type: {consultation_type}",
+            f"Status: {status_label}",
+        ]
+        if appointment.get("hospital_address"):
+            lines.insert(4, f"Address: {appointment['hospital_address']}")
+        if appointment.get("appointment_reason"):
+            lines.append(f"Reason: {appointment['appointment_reason']}")
+        lines.extend(
+            [
+                "",
+                "You will receive a reminder before the appointment if reminders are enabled.",
+                "CareSlot",
+            ]
+        )
+        return "\n".join(lines)
 
     def _get_recipient_profile(self, user_id: str) -> Dict[str, Any]:
         """Resolve email/phone using profile first, then Supabase Auth registered email."""

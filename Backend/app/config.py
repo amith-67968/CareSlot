@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     ENABLE_EMAIL_NOTIFICATIONS: bool = False
     EMAIL_PROVIDER: str = "smtp"
     RESEND_API_KEY: str = ""
+    EMAIL_TEST_RECIPIENT: str = ""
     ENABLE_SMS_NOTIFICATIONS: bool = False
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
