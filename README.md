@@ -288,7 +288,8 @@ The appointment migration adds fields for:
 ```powershell
 cd C:\CodeRush\Backend
 .\venv\Scripts\Activate.ps1
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+
 ```
 
 Backend URL:
