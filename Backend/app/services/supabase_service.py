@@ -3,10 +3,9 @@ CareSlot — Supabase Service
 Singleton wrapper for Supabase client operations.
 """
 
-from supabase import create_client, Client, ClientOptions
+from supabase import create_client, Client
 from app.config import get_settings
 from typing import Optional, Any, Dict, List
-import httpx
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,14 +16,6 @@ class SupabaseService:
 
     _client: Optional[Client] = None
     _admin_client: Optional[Client] = None
-    _http_client: Optional[httpx.Client] = None
-
-    @classmethod
-    def _get_http_client(cls) -> httpx.Client:
-        """Use a direct HTTP client so local proxy env vars cannot break Supabase."""
-        if cls._http_client is None:
-            cls._http_client = httpx.Client(trust_env=False)
-        return cls._http_client
 
     @classmethod
     def _get_client(cls) -> Client:
@@ -34,7 +25,6 @@ class SupabaseService:
             cls._client = create_client(
                 settings.SUPABASE_URL,
                 settings.SUPABASE_ANON_KEY,
-                options=ClientOptions(httpx_client=cls._get_http_client()),
             )
         return cls._client
 
@@ -46,7 +36,6 @@ class SupabaseService:
             cls._admin_client = create_client(
                 settings.SUPABASE_URL,
                 settings.SUPABASE_SERVICE_ROLE_KEY,
-                options=ClientOptions(httpx_client=cls._get_http_client()),
             )
         return cls._admin_client
 
