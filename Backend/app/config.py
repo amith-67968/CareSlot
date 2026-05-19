@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     # --- Scheduled Reminder Delivery ---
     APPOINTMENT_TIMEZONE: str = "Asia/Kolkata"
     CRON_SECRET: str = ""
+    ENABLE_REMINDER_WORKER: bool = True
+    REMINDER_WORKER_INTERVAL_SECONDS: int = 60
     ENABLE_EMAIL_NOTIFICATIONS: bool = False
     EMAIL_PROVIDER: str = "smtp"
     RESEND_API_KEY: str = ""

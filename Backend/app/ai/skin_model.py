@@ -8,10 +8,12 @@ from typing import Dict, Any
 from app.config import get_settings
 import logging
 import os
+import threading
 
 logger = logging.getLogger(__name__)
 
 _model = None
+_model_lock = threading.Lock()
 
 SKIN_CLASSES = ["akiec", "bcc", "bkl", "df", "mel", "nv", "vasc"]
 
@@ -42,30 +44,37 @@ def load_skin_model():
     if _model is not None:
         return _model
 
-    import tensorflow as tf
-    from tensorflow.keras.applications import MobileNetV2  # type: ignore[import-untyped]
-    from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout  # type: ignore[import-untyped]
-    from tensorflow.keras.models import Model  # type: ignore[import-untyped]
+    with _model_lock:
+        if _model is not None:
+            return _model
 
-    settings = get_settings()
-    model_path = settings.SKIN_MODEL_PATH
+        import tensorflow as tf
+        from tensorflow.keras.applications import MobileNetV2  # type: ignore[import-untyped]
+        from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout  # type: ignore[import-untyped]
+        from tensorflow.keras.models import Model  # type: ignore[import-untyped]
 
-    if os.path.exists(model_path):
-        logger.info(f"Loading fine-tuned skin model from: {model_path}")
-        _model = tf.keras.models.load_model(model_path)
-    else:
-        logger.warning(f"Fine-tuned model not found at {model_path}. Creating base MobileNetV2.")
-        base_model = MobileNetV2(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
-        base_model.trainable = False
-        x = base_model.output
-        x = GlobalAveragePooling2D()(x)
-        x = Dense(256, activation="relu")(x)
-        x = Dropout(0.5)(x)
-        x = Dense(128, activation="relu")(x)
-        x = Dropout(0.3)(x)
-        predictions = Dense(len(SKIN_CLASSES), activation="softmax")(x)
-        _model = Model(inputs=base_model.input, outputs=predictions)
-        os.makedirs(os.path.dirname(model_path) or ".", exist_ok=True)
+        settings = get_settings()
+        model_path = settings.SKIN_MODEL_PATH
+
+        if os.path.exists(model_path):
+            logger.info(f"Loading fine-tuned skin model from: {model_path}")
+            _model = tf.keras.models.load_model(model_path)
+        else:
+            logger.warning(f"Fine-tuned model not found at {model_path}. Creating base MobileNetV2.")
+            base_model = MobileNetV2(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
+            base_model.trainable = False
+            x = base_model.output
+            x = GlobalAveragePooling2D()(x)
+            x = Dense(256, activation="relu")(x)
+            x = Dropout(0.5)(x)
+            x = Dense(128, activation="relu")(x)
+            x = Dropout(0.3)(x)
+            predictions = Dense(len(SKIN_CLASSES), activation="softmax")(x)
+            _model = Model(inputs=base_model.input, outputs=predictions)
+            os.makedirs(os.path.dirname(model_path) or ".", exist_ok=True)
+
+        warmup = np.zeros((1, 224, 224, 3), dtype=np.float32)
+        _model(warmup, training=False)
 
     logger.info("Skin disease model loaded successfully")
     return _model
@@ -75,14 +84,14 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
     """Preprocess an image for MobileNetV2 inference."""
     from PIL import Image
     import io
-    import tensorflow as tf
 
     image = Image.open(io.BytesIO(image_bytes))
+    image.draft("RGB", (224, 224))
     if image.mode != "RGB":
         image = image.convert("RGB")
-    image = image.resize((224, 224), Image.Resampling.LANCZOS)
+    image = image.resize((224, 224), Image.Resampling.BILINEAR)
     img_array = np.array(image, dtype=np.float32)
-    img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
+    img_array = (img_array / 127.5) - 1.0
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
@@ -91,7 +100,10 @@ def predict_skin_disease(image_bytes: bytes) -> Dict[str, Any]:
     """Run skin disease prediction on an uploaded image."""
     model = load_skin_model()
     img_array = preprocess_image(image_bytes)
-    predictions = model.predict(img_array, verbose=0)
+    try:
+        predictions = model(img_array, training=False).numpy()
+    except AttributeError:
+        predictions = model.predict(img_array, verbose=0)
     probs = predictions[0]
 
     top_idx = int(np.argmax(probs))

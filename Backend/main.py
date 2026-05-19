@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from app.middleware.cors import setup_cors
 from app.config import get_settings
+import asyncio
 import logging
 import time
 
@@ -23,6 +24,7 @@ logger = logging.getLogger("careslot")
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     logger.info("Starting CareSlot Backend...")
+    reminder_worker_task = None
 
     # Initialize ChromaDB knowledge base
     try:
@@ -47,9 +49,49 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Embedding model warning: {e}")
 
+    # Pre-load and warm up the CNN so the first skin analysis request is fast.
+    try:
+        from app.ai.skin_model import load_skin_model
+        await asyncio.to_thread(load_skin_model)
+        logger.info("Skin CNN model loaded")
+    except Exception as e:
+        logger.warning(f"Skin CNN model warning: {e}")
+
+    if settings.ENABLE_REMINDER_WORKER:
+        reminder_worker_task = asyncio.create_task(run_reminder_worker())
+        logger.info(
+            "Reminder worker started; interval=%ss",
+            settings.REMINDER_WORKER_INTERVAL_SECONDS,
+        )
+
     logger.info("CareSlot Backend ready!")
-    yield
+    try:
+        yield
+    finally:
+        if reminder_worker_task:
+            reminder_worker_task.cancel()
+            try:
+                await reminder_worker_task
+            except asyncio.CancelledError:
+                pass
     logger.info("Shutting down CareSlot Backend...")
+
+
+async def run_reminder_worker():
+    """Process due reminders while the local API server is running."""
+    from app.services.notification_service import NotificationService
+
+    while True:
+        try:
+            result = await NotificationService().process_due_reminders()
+            if result.get("processed") or result.get("failures"):
+                logger.info("Reminder worker result: %s", result)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.warning(f"Reminder worker warning: {e}")
+
+        await asyncio.sleep(max(15, settings.REMINDER_WORKER_INTERVAL_SECONDS))
 
 
 # Create FastAPI app

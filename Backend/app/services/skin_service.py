@@ -9,6 +9,7 @@ from app.services.supabase_service import SupabaseService
 from app.models.skin import SkinSymptomsInput
 from app.config import get_settings
 from typing import Dict, Any, Optional
+import asyncio
 import uuid
 import logging
 
@@ -39,6 +40,7 @@ class SkinService:
         # 1. Upload image to Supabase Storage
         image_id = str(uuid.uuid4())
         storage_path = f"skin-images/{user_id}/{image_id}_{filename}"
+        model_task = asyncio.to_thread(predict_skin_disease, image_bytes)
 
         try:
             self.supabase.upload_file("skin-uploads", storage_path, image_bytes, content_type)
@@ -61,7 +63,7 @@ class SkinService:
             logger.error(f"Image record insert failed: {e}")
 
         # 2. Run MobileNetV2 prediction
-        model_result = predict_skin_disease(image_bytes)
+        model_result = await model_task
 
         # 3. Build symptoms text for LLM
         symptoms_text = self._build_symptoms_text(symptoms)
